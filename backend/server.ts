@@ -23,10 +23,20 @@ app.use(express.json());
 // Firebase Initialization
 const SERVICE_ACCOUNT_PATH = path.resolve(__dirname, 'serviceAccountKey.json');
 let firestore: admin.firestore.Firestore | null = null;
+let serviceAccount: any = null;
 
-if (fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
-        const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf8'));
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } catch (err) { console.error('[Error] Failed to parse FIREBASE_SERVICE_ACCOUNT env var'); }
+} else if (fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+    try {
+        serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf8'));
+    } catch (err) { console.error('[Error] Failed to read serviceAccountKey.json'); }
+}
+
+if (serviceAccount) {
+    try {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
@@ -34,21 +44,24 @@ if (fs.existsSync(SERVICE_ACCOUNT_PATH)) {
         console.log('[Database] Firestore initialized successfully.');
 
         // Bootstrap: Ensure at least one admin exists
-        const accountsSnapshot = await firestore.collection('accounts').limit(1).get();
-        if (accountsSnapshot.empty) {
-            console.log('[Auth] No accounts found. Creating default admin...');
-            await firestore.collection('accounts').doc('admin').set({
-                username: 'admin',
-                password: 'admin123',
-                name: 'System Admin',
-                type: 'admin'
-            });
-        }
+        const bootstrap = async () => {
+            const accountsSnapshot = await firestore!.collection('accounts').limit(1).get();
+            if (accountsSnapshot.empty) {
+                console.log('[Auth] No accounts found. Creating default admin...');
+                await firestore!.collection('accounts').doc('admin').set({
+                    username: 'admin',
+                    password: 'admin123',
+                    name: 'System Admin',
+                    type: 'admin'
+                });
+            }
+        };
+        bootstrap();
     } catch (err) {
         console.error('[Error] Failed to initialize Firestore:', err);
     }
 } else {
-    console.log('[Database] serviceAccountKey.json not found. Falling back to Local Mode (CSV/JSON).');
+    console.log('[Database] No credentials found. Falling back to Local Mode (CSV/JSON).');
     
     // Bootstrap Local Mode
     const accountsPath = path.resolve(__dirname, 'accounts.json');
@@ -189,7 +202,7 @@ async function getTemporaryRider(uid: string, date: string, timeSlot: string) {
     console.log(`[Lookup] Checking temp rider for UID: ${uid}, Date: ${date}, Slot: ${timeSlot}`);
     if (firestore) {
         try {
-            const snapshot = await firestore.collection('temporaryRiders')
+            const snapshot = await firestore!.collection('temporaryRiders')
                 .where('uid', '==', uid)
                 .where('date', '==', date)
                 .where('timeSlot', '==', timeSlot)
@@ -216,7 +229,7 @@ async function getTemporaryRider(uid: string, date: string, timeSlot: string) {
 // New helper to fetch temp riders without extra logging if needed
 async function fetchTemporaryRidersRaw(date: string, timeSlot: string): Promise<any[]> {
     if (firestore) {
-        const snapshot = await firestore.collection('temporaryRiders')
+        const snapshot = await firestore!.collection('temporaryRiders')
             .where('date', '==', date)
             .where('timeSlot', '==', timeSlot)
             .get();
@@ -242,13 +255,13 @@ async function getStudentsForSlot(slotLabel: string, dateStr?: string) {
     if (firestore) {
         try {
             // 1. Fetch students for this specific slot
-            const snapshot = await firestore.collection('students').where('listType', '==', csvType).get();
+            const snapshot = await firestore!.collection('students').where('listType', '==', csvType).get();
             snapshot.forEach(doc => students.push(doc.data()));
             console.log(`[Helper] Primary fetch found ${students.length} students`);
 
             // 2. Include legacy students if this is 'arrival' or if the primary slot is empty
             if (csvType === "arrival" || students.length === 0) {
-                const legacySnapshot = await firestore.collection('students').get();
+                const legacySnapshot = await firestore!.collection('students').get();
                 let added = 0;
                 legacySnapshot.forEach(doc => {
                     const data = doc.data();
@@ -308,7 +321,7 @@ async function getStudentsForSlot(slotLabel: string, dateStr?: string) {
 
 app.get('/api/admin/temporary-riders', authorize, async (req: Request, res: Response) => {
     if (firestore) {
-        const snapshot = await firestore.collection('temporaryRiders').get();
+        const snapshot = await firestore!.collection('temporaryRiders').get();
         const riders: any[] = [];
         snapshot.forEach(doc => riders.push({ id: doc.id, ...doc.data() }));
         res.json(riders);
@@ -329,7 +342,7 @@ app.post('/api/admin/temporary-riders', authorize, async (req: Request, res: Res
     try {
         console.log(`[Admin] Adding temp rider: ${name} (${uid}) for ${date} slot ${timeSlot}`);
         if (firestore) {
-            await firestore.collection('temporaryRiders').add({ 
+            await firestore!.collection('temporaryRiders').add({ 
                 date, 
                 timeSlot, 
                 bus, 
@@ -356,7 +369,7 @@ app.post('/api/admin/temporary-riders', authorize, async (req: Request, res: Res
 app.delete('/api/admin/temporary-riders/:id', authorize, async (req: Request, res: Response) => {
     const id = req.params.id;
     if (firestore) {
-        await firestore.collection('temporaryRiders').doc(id).delete();
+        await firestore!.collection('temporaryRiders').doc(id).delete();
     } else {
         const tempPath = path.resolve(__dirname, 'temporary-riders.json');
         if (fs.existsSync(tempPath)) {
@@ -372,15 +385,15 @@ app.get('/api/admin/bus-occupancy', authorize, async (req: Request, res: Respons
     const { date, timeSlot, bus } = req.query;
     if (!date || !timeSlot || !bus) return res.status(400).json({ error: "Missing fields" });
 
-    const matchingConfig = slotConfigs.find(s => `${s.start}-${s.end}` === timeSlot);
+    const matchingConfig = slotConfigs.find(s => `${s.start}-${s.end}` === (timeSlot as string));
     const csvType = matchingConfig?.csvType || "arrival";
 
     // 1. Get bus overflow limit
     let overflowLimit = 40; // Default
     if (firestore) {
-        const configDoc = await firestore.collection('config').doc(`buses_${csvType}`).get();
+        const configDoc = await firestore!.collection('config').doc(`buses_${csvType}`).get();
         const busList: any[] = configDoc.data()?.list || [];
-        const busObj = busList.find(b => (b.name || b) === bus);
+        const busObj = busList.find(b => (b.name || b) === (bus as string));
         if (busObj && typeof busObj === 'object') overflowLimit = busObj.overflow || 40;
     } else {
         const buses = loadBusesLocal(csvType);
@@ -391,17 +404,17 @@ app.get('/api/admin/bus-occupancy', authorize, async (req: Request, res: Respons
     let count = 0;
     // 2. Regular students
     if (firestore) {
-        const snapshot = await firestore.collection('students')
+        const snapshot = await firestore!.collection('students')
             .where('listType', '==', csvType)
-            .where('bus', '==', bus)
+            .where('bus', '==', (bus as string))
             .get();
         count = snapshot.size;
 
         // 3. Temporary riders ADDED to this bus
-        const tempIn = await firestore.collection('temporaryRiders')
-            .where('date', '==', date)
-            .where('timeSlot', '==', timeSlot)
-            .where('bus', '==', bus)
+        const tempIn = await firestore!.collection('temporaryRiders')
+            .where('date', '==', (date as string))
+            .where('timeSlot', '==', (timeSlot as string))
+            .where('bus', '==', (bus as string))
             .get();
         count += tempIn.size;
     } else {
@@ -446,7 +459,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
     
     if (firestore) {
         try {
-            const userDoc = await firestore.collection('accounts').doc(username).get();
+            const userDoc = await firestore!.collection('accounts').doc(username).get();
             const user = userDoc.data();
             if (user && user.password === password) {
                 const { password: _, ...userWithoutPassword } = user;
@@ -501,14 +514,14 @@ app.get('/api/buses', authorize, async (req: Request, res: Response) => {
 
     if (firestore) {
         try {
-            const configDoc = await firestore.collection('config').doc(`buses_${csvType}`).get();
+            const configDoc = await firestore!.collection('config').doc(`buses_${csvType}`).get();
             let buses = configDoc.data()?.list || [];
             console.log(`[Buses] Primary fetch (buses_${csvType}): Found ${buses.length}`);
 
             // Always fallback if empty, regardless of csvType
             if (buses.length === 0) {
                 console.log(`[Buses] Falling back to default 'buses' config`);
-                const defaultDoc = await firestore.collection('config').doc('buses').get();
+                const defaultDoc = await firestore!.collection('config').doc('buses').get();
                 buses = defaultDoc.data()?.list || [];
                 console.log(`[Buses] Fallback fetch: Found ${buses.length}`);
             }
@@ -545,13 +558,13 @@ app.get('/api/students', authorize, async (req: Request, res: Response) => {
             let students: Record<string, any> = {};
             
             // 1. Try to fetch students for this specific slot
-            const snapshot = await firestore.collection('students').where('listType', '==', csvType).get();
+            const snapshot = await firestore!.collection('students').where('listType', '==', csvType).get();
             snapshot.forEach(doc => students[doc.data().uid] = doc.data());
             console.log(`[Students] Primary fetch (${csvType}): Found ${snapshot.size}`);
 
             // 2. Legacy fallback
             if (csvType === "arrival" || snapshot.empty) {
-                const allDocs = await firestore.collection('students').get();
+                const allDocs = await firestore!.collection('students').get();
                 let legacyCount = 0;
                 allDocs.forEach(doc => {
                     const data = doc.data();
@@ -605,25 +618,25 @@ async function findStudentData(uid: string, preferredCsvType?: string): Promise<
             // 2. Try preferred trip/slot first if provided
             if (preferredCsvType) {
                 const docId = `${uid}_${preferredCsvType}`;
-                const tripDoc = await firestore.collection('students').doc(docId).get();
+                const tripDoc = await firestore!.collection('students').doc(docId).get();
                 if (tripDoc.exists) student = tripDoc.data() as Student;
             }
 
             if (!student) {
                 // 3. Try arrival (standard primary list)
-                const arrivalDoc = await firestore.collection('students').doc(`${uid}_arrival`).get();
+                const arrivalDoc = await firestore!.collection('students').doc(`${uid}_arrival`).get();
                 if (arrivalDoc.exists) student = arrivalDoc.data() as Student;
             }
 
             if (!student) {
                 // 4. Try legacy ID (just UID)
-                const legacyDoc = await firestore.collection('students').doc(uid).get();
+                const legacyDoc = await firestore!.collection('students').doc(uid).get();
                 if (legacyDoc.exists) student = legacyDoc.data() as Student;
             }
 
             if (!student) {
                 // 5. Final search across all documents for this UID
-                const snapshot = await firestore.collection('students').where('uid', '==', uid).limit(1).get();
+                const snapshot = await firestore!.collection('students').where('uid', '==', uid).limit(1).get();
                 if (!snapshot.empty) student = snapshot.docs[0].data() as Student;
             }
 
@@ -680,7 +693,7 @@ async function processRollCall(uid: string, providedTimestamp?: string) {
 
     if (firestore) {
         try {
-            await firestore.collection('rollCalls').add({ 
+            await firestore!.collection('rollCalls').add({ 
                 uid, name, badge, bus, timestamp, timeSlot, date: dateStr, isTemp: isTemp
             });
         } catch (err) { console.error(err); }
@@ -731,9 +744,9 @@ app.get('/api/admin/rollcall-week', authorize, async (req: Request, res: Respons
         // 2. Fetch all roll calls in the date range
         let allRollCalls: any[] = [];
         if (firestore) {
-            const snapshot = await firestore.collection('rollCalls')
-                .where('date', '>=', startDate)
-                .where('date', '<=', endDate)
+            const snapshot = await firestore!.collection('rollCalls')
+                .where('date', '>=', (startDate as string))
+                .where('date', '<=', (endDate as string))
                 .get();
             snapshot.forEach(doc => allRollCalls.push(doc.data()));
         } else {
@@ -910,7 +923,7 @@ app.get('/api/admin/rollcall-csv', authorize, async (req: Request, res: Response
 
     if (firestore) {
         // Fetch roll call records for the given date and time slot
-        const snapshot = await firestore.collection('rollCalls')
+        const snapshot = await firestore!.collection('rollCalls')
             .where('date', '==', date)
             .where('timeSlot', '==', timeSlot)
             .get();
@@ -985,7 +998,7 @@ app.get('/api/admin/rollcall-csv', authorize, async (req: Request, res: Response
 
 app.get('/api/admin/accounts', authorize, async (req: Request, res: Response) => {
     if (firestore) {
-        const snapshot = await firestore.collection('accounts').get();
+        const snapshot = await firestore!.collection('accounts').get();
         const accounts: any[] = [];
         snapshot.forEach(doc => {
             const data = doc.data();
@@ -1025,7 +1038,7 @@ app.post('/api/admin/config/slots', authorize, (req: Request, res: Response) => 
             else {
                 const d1 = s1.day !== undefined ? [s1.day] : (s1.days || [0,1,2,3,4,5,6]);
                 const d2 = s2.day !== undefined ? [s2.day] : (s2.days || [0,1,2,3,4,5,6]);
-                daysOverlap = d1.some(d => d2.includes(d));
+                daysOverlap = d1.some((d: number) => d2.includes(d));
             }
 
             if (daysOverlap) {
@@ -1051,15 +1064,15 @@ app.post('/api/admin/config/students', authorize, async (req: Request, res: Resp
 
         if (firestore) {
             // Fetch students belonging to this specific list type
-            const snapshot = await firestore.collection('students').where('listType', '==', type).get();
+            const snapshot = await firestore!.collection('students').where('listType', '==', type).get();
             const existingDocs = snapshot.docs;
-            const newDocIds = new Set(students.map(s => `${s.uid}_${type}`));
+            const newDocIds = new Set(students.map((s: any) => `${s.uid}_${type}`));
 
             // Add or Update students in this specific list
             for (let i = 0; i < students.length; i += 450) {
-                const batch = firestore.batch();
+                const batch = firestore!.batch();
                 const chunk = students.slice(i, i + 450);
-                chunk.forEach(s => {
+                chunk.forEach((s: any) => {
                     if (s.uid) {
                         const docId = `${s.uid}_${type}`;
                         batch.set(firestore!.collection('students').doc(docId), { ...s, listType: type });
@@ -1071,7 +1084,7 @@ app.post('/api/admin/config/students', authorize, async (req: Request, res: Resp
             // Delete students that are no longer in this specific list
             const toDelete = existingDocs.filter(doc => !newDocIds.has(doc.id));
             for (let i = 0; i < toDelete.length; i += 450) {
-                const batch = firestore.batch();
+                const batch = firestore!.batch();
                 const chunk = toDelete.slice(i, i + 450);
                 chunk.forEach(doc => batch.delete(doc.ref));
                 await batch.commit();
@@ -1103,9 +1116,9 @@ app.post('/api/admin/config/buses', authorize, async (req: Request, res: Respons
         const type = csvType || "arrival";
 
         if (firestore) {
-            await firestore.collection('config').doc(`buses_${type}`).set({ list: buses });
+            await firestore!.collection('config').doc(`buses_${type}`).set({ list: buses });
             if (type === "arrival") {
-                await firestore.collection('config').doc('buses').set({ list: buses });
+                await firestore!.collection('config').doc('buses').set({ list: buses });
             }
         } else {
             const filename = type === "arrival" ? 'current-bus.csv' : `current-bus_${type}.csv`;
@@ -1140,15 +1153,15 @@ app.post('/api/admin/config/accounts', authorize, async (req: Request, res: Resp
         }));
 
         if (firestore) {
-            const snapshot = await firestore.collection('accounts').get();
+            const snapshot = await firestore!.collection('accounts').get();
             const existingDocs = snapshot.docs;
-            const newUsernames = new Set(processedAccounts.map(a => a.username));
+            const newUsernames = new Set(processedAccounts.map((a: any) => a.username));
 
             // Update or Set new accounts in batches of 450
             for (let i = 0; i < processedAccounts.length; i += 450) {
-                const batch = firestore.batch();
+                const batch = firestore!.batch();
                 const chunk = processedAccounts.slice(i, i + 450);
-                chunk.forEach(acc => {
+                chunk.forEach((acc: any) => {
                     if (acc.username) {
                         batch.set(firestore!.collection('accounts').doc(acc.username), acc);
                     }
@@ -1159,7 +1172,7 @@ app.post('/api/admin/config/accounts', authorize, async (req: Request, res: Resp
             // Delete accounts that are no longer in the list in batches of 450
             const toDelete = existingDocs.filter(doc => !newUsernames.has(doc.id));
             for (let i = 0; i < toDelete.length; i += 450) {
-                const batch = firestore.batch();
+                const batch = firestore!.batch();
                 const chunk = toDelete.slice(i, i + 450);
                 chunk.forEach(doc => batch.delete(doc.ref));
                 await batch.commit();
@@ -1184,18 +1197,15 @@ async function getDriveAccessToken() {
         return driveTokenCache.token;
     }
 
+    if (!serviceAccount) return null;
+
     try {
-        // We reuse the Firebase Admin SDK to get a token for Google Drive scopes
-        // This requires the Service Account to have "Google Drive" API enabled in Cloud Console
-        const tokenResponse = await admin.credential.cert(SERVICE_ACCOUNT_PATH).getAccessToken();
-        
-        // Note: The default Firebase token might not have Drive scopes.
-        // If it fails, you might need to use google-auth-library for explicit scopes.
-        // But usually, the default service account has broad permissions.
+        // Use the parsed serviceAccount object
+        const tokenResponse = await admin.credential.cert(serviceAccount).getAccessToken();
         
         driveTokenCache = {
             token: tokenResponse.access_token,
-            expiry: tokenResponse.expirationTime
+            expiry: Date.now() + 3600000 // Tokens are usually valid for 1 hour
         };
         return tokenResponse.access_token;
     } catch (err) {
@@ -1205,7 +1215,7 @@ async function getDriveAccessToken() {
 }
 
 app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
-    const uid = req.params.uid;
+    const uid = req.params.uid as string;
     const student = await findStudentData(uid);
     const badge = student?.badge;
 
