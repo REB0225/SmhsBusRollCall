@@ -493,6 +493,69 @@
             if (p) { accounts[index].password = p; alert('密碼已修改，請記得儲存變更。'); }
         }
 
+        function updateDefaultSlot() {
+            defaultSlot.csvType = document.getElementById('default-slot-csv').value;
+            defaultSlot.label = document.getElementById('default-slot-label').value;
+        }
+
+        function addAccount() {
+            const userInp = document.getElementById('new-account-username');
+            const passInp = document.getElementById('new-account-password');
+            const nameInp = document.getElementById('new-account-name');
+            const typeInp = document.getElementById('new-account-type');
+            
+            const username = userInp.value.trim();
+            const password = passInp.value.trim();
+            const name = nameInp.value.trim();
+            const type = typeInp.value;
+
+            if (!username || !password || !name) {
+                alert('所有欄位皆為必填');
+                return;
+            }
+
+            if (accounts.some(a => a.username === username)) {
+                alert('使用者名稱已存在');
+                return;
+            }
+
+            accounts.push({ username, password, name, type });
+            renderAccounts();
+            
+            userInp.value = '';
+            passInp.value = '';
+            nameInp.value = '';
+        }
+
+        function addSlot() {
+            const dayVal = document.getElementById('new-slot-day').value;
+            const start = document.getElementById('new-slot-start').value.trim();
+            const end = document.getElementById('new-slot-end').value.trim();
+            const csvType = document.getElementById('new-slot-csv').value;
+            const label = document.getElementById('new-slot-label').value.trim();
+            const type = document.getElementById('new-slot-type').value;
+
+            if (!start || !end || !label) {
+                alert('開始時間、結束時間與名稱皆為必填');
+                return;
+            }
+
+            const newSlot = { start, end, csvType, label, isTemp: type === 'temp' };
+            
+            if (dayVal.startsWith('group:')) {
+                newSlot.days = dayVal.split(':')[1].split(',').map(Number);
+            } else if (dayVal !== "") {
+                newSlot.day = parseInt(dayVal);
+            }
+
+            slotConfigs.push(newSlot);
+            renderSlots();
+
+            document.getElementById('new-slot-start').value = '';
+            document.getElementById('new-slot-end').value = '';
+            document.getElementById('new-slot-label').value = '';
+        }
+
         async function saveAccounts() {
             const status = document.getElementById('status-accounts');
             try {
