@@ -9,7 +9,10 @@ import admin from 'firebase-admin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const photosPath = path.resolve(__dirname, 'Photos');
+
+// Allow photos to be served from a custom path (e.g., a Samba mount)
+const photosPath = process.env.PHOTOS_PATH ? path.resolve(process.env.PHOTOS_PATH) : path.resolve(__dirname, 'Photos');
+console.log(`[System] Serving photos from: ${photosPath}`);
 
 const app = express();
 const PORT = 5001;
@@ -1177,14 +1180,52 @@ app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
     const student = await findStudentData(uid);
     const badge = student?.badge;
 
-    if (badge) {
-        const photoFilePath = path.resolve(photosPath, `${badge}.jpg`);
-        if (fs.existsSync(photoFilePath)) {
-            return res.sendFile(photoFilePath);
-        }
+    if (!badge) {
+        return res.status(404).json({ error: "Student badge not found" });
     }
 
-    res.status(404).json({ error: "Photo not found" });
+    const gdriveFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+    const gdriveApiKey = process.env.GOOGLE_API_KEY;
+
+    if (!gdriveFolderId || !gdriveApiKey) {
+        console.error("[GDrive] Missing Google Drive configuration");
+        return res.status(500).json({ error: "Server photo configuration error" });
+    }
+
+    const filename = `${badge}.jpg`;
+
+    try {
+        console.log(`[GDrive] Searching for ${filename}...`);
+        
+        // 1. Search for the file ID by name inside the specific folder
+        const query = encodeURIComponent(`name='${filename}' and '${gdriveFolderId}' in parents and trashed=false`);
+        const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)&key=${gdriveApiKey}`;
+        
+        const searchRes = await fetch(searchUrl);
+        const searchData: any = await searchRes.json();
+
+        if (searchData.files && searchData.files.length > 0) {
+            const fileId = searchData.files[0].id;
+            
+            // 2. Download the actual image content
+            const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${gdriveApiKey}`;
+            const downloadRes = await fetch(downloadUrl);
+            
+            if (downloadRes.ok) {
+                const arrayBuffer = await downloadRes.arrayBuffer();
+                res.setHeader('Content-Type', 'image/jpeg');
+                res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+                return res.send(Buffer.from(arrayBuffer));
+            }
+        }
+        
+        console.log(`[GDrive] Photo not found: ${filename}`);
+        res.status(404).json({ error: "Photo not found in Drive" });
+
+    } catch (err) {
+        console.error(`[GDrive] API Error:`, err);
+        res.status(500).json({ error: "Error communicating with Google Drive" });
+    }
 });
 
 app.use('/photos', authorize, express.static(photosPath));
