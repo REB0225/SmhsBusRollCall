@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bus Roll Call - Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>點名系統管理後台</title>
     <style>
         :root {
             --primary: #0071e3;
+            --secondary: #86868b;
             --bg: #f5f5f7;
             --card: #ffffff;
             --text: #1d1d1f;
-            --secondary-text: #86868b;
+            --secondary-text: #6e6e73;
+            --success: #34c759;
+            --warning: #ffcc00;
+            --error: #ff3b30;
         }
 
         body {
@@ -18,52 +22,31 @@
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            padding: 0;
+            line-height: 1.5;
         }
 
         .container {
-            background: var(--card);
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #loginSection {
             max-width: 400px;
-            transition: all 0.3s ease;
+            margin-top: 100px;
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
-        .container.dashboard {
-            max-width: 800px;
-            margin: 2rem;
-        }
+        h1 { font-size: 24px; font-weight: 700; margin-bottom: 0.5rem; }
+        .subtitle { color: var(--secondary-text); margin-bottom: 2rem; font-size: 14px; }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            text-align: center;
-        }
-
-        p.subtitle {
-            color: var(--secondary-text);
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--secondary-text); margin-bottom: 8px; text-transform: uppercase; }
+        
         input, select {
             width: 100%;
             padding: 12px;
@@ -71,719 +54,332 @@
             border-radius: 10px;
             font-size: 16px;
             box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
+            background: #fbfbfd;
         }
 
         button {
             width: 100%;
             padding: 14px;
-            background-color: var(--primary);
-            color: white;
             border: none;
             border-radius: 10px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
-            margin-top: 1rem;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        button:disabled {
-            background-color: #d2d2d7;
-            cursor: not-allowed;
-        }
-
-        .secondary-btn {
-            background-color: #e8e8ed;
-            color: var(--text);
-        }
-
-        .error {
-            color: #ff3b30;
-            font-size: 13px;
-            margin-top: 10px;
-            text-align: center;
-            min-height: 18px;
-        }
-
-        #dashboardSection {
-            display: none;
-        }
-
-        .user-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #f5f5f7;
-        }
-
-        .logout-link {
-            color: var(--primary);
-            text-decoration: none;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        /* Tabs and Cards */
-        .tabs {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #d2d2d7;
-        }
-
-        .tab {
-            padding: 10px 5px;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--secondary-text);
-            border-bottom: 2px solid transparent;
             transition: all 0.2s;
-        }
-
-        .tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .admin-cards {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-
-        .config-card {
-            background: #fbfbfd;
-            border: 1px solid #d2d2d7;
-            border-radius: 15px;
-            padding: 1.5rem;
-        }
-
-        .config-card h3 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 1rem;
-        }
-
-        .btn-group button {
-            margin-top: 0;
-        }
-
-        .preview-container {
-            margin-top: 1rem;
-            overflow-x: auto;
-            max-height: 250px;
-            border: 1px solid #d2d2d7;
-            border-radius: 8px;
-            background: white;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 8px 12px;
-            border-bottom: 1px solid #f5f5f7;
-        }
-
-        th {
-            background: #f5f5f7;
-            position: sticky;
-            top: 0;
-            font-weight: 600;
-        }
-
-        .status-msg {
             margin-top: 10px;
-            font-size: 13px;
-            text-align: center;
-            min-height: 18px;
         }
 
-        .status-msg.success { color: #34c759; }
-        .status-msg.error { color: #ff3b30; }
+        .primary-btn { background-color: var(--primary); color: white; }
+        .primary-btn:hover { background-color: #0077ed; }
+        .secondary-btn { background-color: #e8e8ed; color: var(--text); }
+        .secondary-btn:hover { background-color: #d2d2d7; }
+        .delete-btn { background: none; color: var(--error); width: auto; padding: 5px; font-size: 13px; margin: 0; }
+        .text-btn { background: none; color: var(--primary); width: auto; padding: 0; font-size: 14px; margin: 0; }
 
-        .delete-btn {
-            color: #ff3b30 !important;
-            background: none !important;
-            border: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: auto !important;
-            font-weight: 500 !important;
-            cursor: pointer;
-            font-size: 13px !important;
-        }
-        .delete-btn:hover {
-            text-decoration: underline;
-            opacity: 1 !important;
-        }
+        button:disabled { background-color: #d2d2d7; cursor: not-allowed; }
 
-        .table-input {
-            padding: 6px 8px !important;
-            font-size: 13px !important;
-            border-radius: 6px !important;
-            margin: 0 !important;
-        }
+        .dashboard { padding-top: 2rem; }
+        .user-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e8e8ed; }
+        .logout-link { color: var(--primary); text-decoration: none; font-size: 14px; cursor: pointer; }
 
-        .badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
+        .tabs { display: flex; gap: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid #d2d2d7; }
+        .tab { padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--secondary-text); border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        .badge-admin {
-            background-color: #e1f5fe;
-            color: #0288d1;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .badge-user {
-            background-color: #f5f5f7;
-            color: #86868b;
-        }
+        .admin-cards { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+        .config-card { background: white; border: 1px solid #d2d2d7; border-radius: 15px; padding: 1.5rem; }
+        .config-card h3 { margin-top: 0; font-size: 18px; margin-bottom: 1rem; }
 
-        /* Settings Modal */
-        #settingsModal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
+        .table-container { margin-top: 1rem; overflow-x: auto; border: 1px solid #d2d2d7; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+        th { background: #f5f5f7; padding: 12px; font-weight: 600; border-bottom: 1px solid #d2d2d7; }
+        td { padding: 12px; border-bottom: 1px solid #f5f5f7; vertical-align: middle; }
+        
+        .table-input { padding: 6px 10px !important; font-size: 13px !important; margin: 0; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+        .badge-admin { background: #e1f5fe; color: #01579b; }
+        .badge-user { background: #f5f5f7; color: #666; }
 
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
+        .status-msg { font-size: 13px; margin-top: 10px; }
+        .status-msg.success { color: var(--success); }
+        .status-msg.error { color: var(--error); }
 
-        .settings-icon {
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            transition: background 0.2s;
-        }
+        .preview-container { background: #f9f9fb; padding: 10px; border-radius: 8px; margin-top: 10px; font-family: monospace; font-size: 11px; white-space: pre; }
 
-        .settings-icon:hover {
-            background: #f5f5f7;
-        }
+        /* Photo Library */
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        .photo-card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #d2d2d7; transition: all 0.2s; position: relative; }
+        .photo-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .photo-card-img { width: 100%; height: 160px; background: #f5f5f7; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+        .photo-card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-card-info { padding: 10px; border-top: 1px solid #f5f5f7; }
+        .photo-card-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+        .photo-card-uid { font-size: 10px; color: var(--secondary-text); font-family: monospace; }
+        .photo-card-actions { position: absolute; top: 5px; right: 5px; opacity: 0; transition: opacity 0.2s; }
+        .photo-card:hover .photo-card-actions { opacity: 1; }
+        .photo-action-btn { background: rgba(255,255,255,0.9); border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 12px; }
+        .photo-action-btn.delete { color: var(--error); }
 
-        /* Photo Library Grid */
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
+        .spinner { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .photo-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #d2d2d7;
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-        }
-
-        .photo-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-
-        .photo-card-img {
-            width: 100%;
-            height: 180px;
-            background: #f5f5f7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .photo-card-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .photo-card-info {
-            padding: 12px;
-            border-top: 1px solid #f5f5f7;
-        }
-
-        .photo-card-name {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .photo-card-uid {
-            font-size: 11px;
-            color: var(--secondary-text);
-            font-family: monospace;
-        }
-
-        .photo-card-actions {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            display: flex;
-            gap: 5px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .photo-card:hover .photo-card-actions {
-            opacity: 1;
-        }
-
-        .photo-action-btn {
-            background: rgba(255,255,255,0.9);
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            font-size: 14px;
-        }
-
-        .photo-action-btn.delete { color: #ff3b30; }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        #settingsModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .settings-icon { cursor: pointer; padding: 5px; border-radius: 50%; transition: background 0.2s; }
+        .settings-icon:hover { background: #f5f5f7; }
     </style>
 </head>
 <body>
+    <!-- Login Section -->
     <div class="container" id="loginSection">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="flex: 1;">
-                <h1>Admin Login</h1>
-                <p class="subtitle">Access management dashboard</p>
+                <h1>管理員登入</h1>
+                <p class="subtitle">進入管理後台控制面板</p>
             </div>
             <div class="settings-icon" onclick="openSettings()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </div>
         </div>
-        
         <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter username">
+            <label>使用者名稱</label>
+            <input type="text" id="username" placeholder="請輸入帳號">
         </div>
-        
         <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter password">
+            <label>密碼</label>
+            <input type="password" id="password" placeholder="請輸入密碼">
         </div>
-        
-        <button id="loginBtn" onclick="login()">Login</button>
+        <button id="loginBtn" class="primary-btn" onclick="login()">登入</button>
         <p id="loginError" class="error"></p>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div class="container dashboard" id="dashboardSection" style="display: none;">
+        <div class="user-info">
+            <div>
+                <span id="welcomeText" style="font-weight: 600;">您好，管理員</span>
+                <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">系統管理控制面板</div>
+            </div>
+            <a class="logout-link" onclick="logout()">登出</a>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('export')">匯出記錄</div>
+            <div class="tab" onclick="switchTab('temp-riders')">臨時搭乘</div>
+            <div class="tab" onclick="switchTab('photos')">相片庫</div>
+            <div class="tab" onclick="switchTab('config')">系統設定</div>
+        </div>
+
+        <!-- Tab: Export -->
+        <div id="exportTab" class="tab-content active">
+            <h1>匯出點名記錄</h1>
+            <p class="subtitle">下載指定日期與時段的 CSV 報表</p>
+            <div class="config-card" style="max-width: 500px;">
+                <div class="form-group">
+                    <label>日期</label>
+                    <input type="date" id="datePicker">
+                </div>
+                <div class="form-group">
+                    <label>時段</label>
+                    <select id="slotPicker">
+                        <option value="07:00-09:00">早上 (07:00-09:00)</option>
+                        <option value="16:00-18:00">下午 (16:00-18:00)</option>
+                        <option value="19:00-21:00">晚上 (19:00-21:00)</option>
+                        <option value="Not in time">其他 (不在時段內)</option>
+                    </select>
+                </div>
+                <button id="downloadBtn" class="primary-btn" onclick="downloadCSV()">下載單日 CSV</button>
+                <button id="downloadWeekBtn" class="secondary-btn" onclick="downloadWeekCSV()">下載全週記錄 (一至五)</button>
+                <p id="downloadError" class="error"></p>
+            </div>
+        </div>
+
+        <!-- Tab: Temporary Riders -->
+        <div id="tempRidersTab" class="tab-content">
+            <h1>臨時搭乘管理</h1>
+            <p class="subtitle">手動指派學生至特定行程</p>
+            <div class="admin-cards">
+                <div class="config-card">
+                    <h3>新增臨時指派</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group"><label>日期</label><input type="date" id="temp-date" onchange="updateOccupancy()"></div>
+                        <div class="form-group"><label>時段</label><select id="temp-slot" onchange="updateOccupancy()"></select></div>
+                    </div>
+                    <div class="form-group"><label>目標車輛</label><select id="temp-bus" onchange="updateOccupancy()"></select></div>
+                    <div class="form-group">
+                        <label>學生 UID (10 碼)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="temp-uid" placeholder="輸入 UID" oninput="lookupStudent()">
+                            <button onclick="lookupStudent()" class="secondary-btn" style="width: auto; margin: 0; padding: 0 15px;">查詢</button>
+                        </div>
+                        <p id="temp-student-info" style="font-size: 12px; margin-top: 5px;"></p>
+                    </div>
+                    <div class="form-group"><label>學生姓名</label><input type="text" id="temp-name" placeholder="姓名"></div>
+                    <div class="form-group"><label>學號 (選填)</label><input type="text" id="temp-badge" placeholder="學號"></div>
+                    
+                    <div id="occupancy-info" class="preview-container" style="display: none; margin-bottom: 15px; background: #e1f5fe; color: #01579b; border: none;">
+                        <strong>車輛負載:</strong> <span id="occupancy-count">0 / 40</span>
+                    </div>
+                    <button id="add-temp-btn" class="primary-btn" onclick="addTemporaryRider()">新增指派</button>
+                    <p id="status-temp" class="status-msg"></p>
+                </div>
+                <div class="config-card">
+                    <h3>作用中臨時指派</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>日期</th><th>時段</th><th>車次</th><th>學生</th><th>學號</th><th>UID</th><th>操作</th></tr></thead>
+                            <tbody id="temp-riders-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Photo Library -->
+        <div id="photosTab" class="tab-content">
+            <div style="display: grid; grid-template-columns: 1fr 350px; gap: 20px; align-items: flex-start; margin-bottom: 2rem;">
+                <div>
+                    <h1>相片庫</h1>
+                    <p class="subtitle">查看與管理資料庫中的學生相片</p>
+                    <input type="text" id="photo-search" placeholder="搜尋姓名、UID 或學號..." oninput="filterPhotos()" style="max-width: 400px;">
+                </div>
+                <div class="config-card" style="margin: 0; padding: 1.2rem; border-color: var(--primary);">
+                    <h3 style="color: var(--primary);">相片上傳</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 11px; font-weight: 600;">單筆上傳</label>
+                        <input type="text" id="photo-upload-uid" placeholder="輸入 UID" class="table-input" style="margin-bottom: 5px;">
+                        <input type="file" id="photo-upload-file" accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
+                        <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="padding: 8px; font-size: 12px;">上傳至資料庫</button>
+                    </div>
+                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                        <label style="font-size: 11px; font-weight: 600;">批量上傳 (檔名需為學號)</label>
+                        <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
+                        <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 8px; font-size: 12px;">開始批量上傳</button>
+                    </div>
+                    <div id="bulk-upload-status" class="status-msg" style="font-size: 11px; max-height: 80px; overflow-y: auto;"></div>
+                    <p id="status-photo-upload" class="status-msg" style="font-size: 11px;"></p>
+                </div>
+            </div>
+            <div id="photo-grid" class="photo-grid"></div>
+        </div>
+
+        <!-- Tab: Config -->
+        <div id="configTab" class="tab-content">
+            <h1>系統設定</h1>
+            <p class="subtitle">管理帳號、時段與基礎名單資料</p>
+            <div class="admin-cards">
+                <!-- Accounts -->
+                <div class="config-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0;">帳號管理</h3>
+                        <button onclick="saveAccounts()" id="save-accounts-btn" class="secondary-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">儲存帳號</button>
+                    </div>
+                    <div class="table-container" style="max-height: 300px;"><table id="accounts-table"><thead><tr><th>帳號</th><th>密碼</th><th>名稱</th><th>權限</th><th>操作</th></tr></thead><tbody id="accounts-body"></tbody>
+                        <tfoot>
+                            <tr style="background: #fbfbfd;">
+                                <td><input type="text" id="new-account-username" placeholder="帳號" class="table-input"></td>
+                                <td><input type="password" id="new-account-password" placeholder="密碼" class="table-input"></td>
+                                <td><input type="text" id="new-account-name" placeholder="名稱" class="table-input"></td>
+                                <td><select id="new-account-type" class="table-input"><option value="user">使用者</option><option value="admin">管理員</option></select></td>
+                                <td><button onclick="addAccount()" class="text-btn">新增</button></td>
+                            </tr>
+                        </tfoot>
+                    </table></div>
+                </div>
+                <!-- Slots -->
+                <div class="config-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0;">時段配置</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="resetToDefaults()" class="secondary-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">重設預設</button>
+                            <button onclick="saveSlots()" id="save-slots-btn" class="primary-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">儲存配置</button>
+                        </div>
+                    </div>
+                    <div class="table-container"><table id="slots-table"><thead><tr><th>日期</th><th>開始</th><th>結束</th><th>名單</th><th>名稱</th><th>類型</th><th>操作</th></tr></thead><tbody id="slots-body"></tbody>
+                        <tfoot>
+                            <tr style="background: #fbfbfd;">
+                                <td><select id="new-slot-day" class="table-input"><option value="">每天</option><option value="group:1,2,3,4">一至四</option><option value="5">週五</option></select></td>
+                                <td><input type="text" id="new-slot-start" placeholder="07:00" class="table-input"></td>
+                                <td><input type="text" id="new-slot-end" placeholder="09:00" class="table-input"></td>
+                                <td><select id="new-slot-csv" class="table-input"><option value="arrival">早上</option><option value="full_departure">下午</option></select></td>
+                                <td><input type="text" id="new-slot-label" placeholder="名稱" class="table-input"></td>
+                                <td><select id="new-slot-type" class="table-input"><option value="permanent">永久</option><option value="temp">臨時</option></select></td>
+                                <td><button onclick="addSlot()" class="text-btn">新增</button></td>
+                            </tr>
+                        </tfoot>
+                    </table></div>
+                </div>
+                <!-- Lists -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="config-card">
+                        <h3>學生名單上傳</h3>
+                        <select id="student-list-type" class="table-input" style="margin-bottom: 10px;">
+                            <option value="arrival">早上名單</option>
+                            <option value="full_departure">下午名單</option>
+                            <option value="night_class_afternoon">夜間下午</option>
+                            <option value="night_class_night">夜間晚上</option>
+                        </select>
+                        <input type="file" id="file-students" accept=".csv" style="font-size: 12px;">
+                        <div class="btn-group">
+                            <button onclick="previewCSV('students')" class="secondary-btn" style="font-size: 13px; padding: 8px;">預覽</button>
+                            <button id="upload-students" onclick="uploadConfig('students')" disabled class="primary-btn" style="font-size: 13px; padding: 8px;">上傳</button>
+                        </div>
+                        <div id="preview-students" class="preview-container" style="display:none"></div>
+                        <p id="status-students" class="status-msg"></p>
+                    </div>
+                    <div class="config-card">
+                        <h3>車次名單上傳</h3>
+                        <select id="bus-list-type" class="table-input" style="margin-bottom: 10px;">
+                            <option value="arrival">早上名單</option>
+                            <option value="full_departure">下午名單</option>
+                        </select>
+                        <input type="file" id="file-buses" accept=".csv" style="font-size: 12px;">
+                        <div class="btn-group">
+                            <button onclick="previewCSV('buses')" class="secondary-btn" style="font-size: 13px; padding: 8px;">預覽</button>
+                            <button id="upload-buses" onclick="uploadConfig('buses')" disabled class="primary-btn" style="font-size: 13px; padding: 8px;">上傳</button>
+                        </div>
+                        <div id="preview-buses" class="preview-container" style="display:none"></div>
+                        <p id="status-buses" class="status-msg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Settings Modal -->
     <div id="settingsModal">
         <div class="modal-content">
-            <h2 style="margin-top: 0; font-size: 20px;">Connection Settings</h2>
-            <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 1.5rem;">Configure the backend API URL for this session.</p>
-            
+            <h2>連線設定</h2>
             <div class="form-group">
-                <label style="font-size: 12px;">API Base URL</label>
-                <input type="text" id="apiUrlInput" placeholder="http://localhost:5001">
+                <label>API 基礎網址</label>
+                <input type="text" id="apiUrlInput" placeholder="https://api.example.com">
             </div>
-            
-            <button onclick="saveSettings()">Save & Close</button>
-            <button class="secondary-btn" onclick="testConnection()">Test Connection</button>
+            <button onclick="saveSettings()" class="primary-btn">儲存並重新載入</button>
+            <button onclick="testConnection()" class="secondary-btn">測試連線</button>
+            <button onclick="document.getElementById('settingsModal').style.display='none'" class="secondary-btn" style="background: none;">取消</button>
             <p id="testStatus" class="status-msg"></p>
         </div>
     </div>
 
-    <div class="container dashboard" id="dashboardSection">
-        <div class="user-info">
-            <div>
-                <span id="welcomeText" style="font-weight: 600;">您好，管理員</span>
-                <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">管理後台控制面板</div>
-            </div>
-            <a class="logout-link" onclick="logout()">登出</a>
-        </div>
-<div class="tabs">
-    <div class="tab active" onclick="switchTab('export')">匯出記錄</div>
-    <div class="tab" onclick="switchTab('temp-riders')">臨時搭乘</div>
-    <div class="tab" onclick="switchTab('photos')">相片庫</div>
-    <div class="tab" onclick="switchTab('config')">系統設定</div>
-</div>
-
-<!-- Export Tab -->
-<div id="exportTab" class="tab-content active">
-    <h1>匯出點名記錄</h1>
-    <p class="subtitle">選擇日期與時段</p>
-    
-    <div class="form-group">
-        <label for="datePicker">日期</label>
-        <input type="date" id="datePicker">
-    </div>
-    
-    <div class="form-group">
-        <label for="slotPicker">時段</label>
-        <select id="slotPicker">
-            <option value="07:00-09:00">早上 (07:00-09:00)</option>
-            <option value="16:00-18:00">下午 (16:00-18:00)</option>
-            <option value="19:00-21:00">晚上 (19:00-21:00)</option>
-            <option value="Not in time">其他 (不在時段內)</option>
-        </select>
-    </div>
-    
-    <button id="downloadBtn" onclick="downloadCSV()">下載單日 CSV</button>
-    <button id="downloadWeekBtn" onclick="downloadWeekCSV()" class="secondary-btn" style="margin-top: 10px; background-color: #5856d6; color: white; border: none;">下載全週記錄 (一至五)</button>
-    <p id="downloadError" class="error"></p>
-</div>
-
-<!-- Temporary Riders Tab -->
-<div id="tempRidersTab" class="tab-content">
-    <h1>Temporary Riders</h1>
-    <p class="subtitle">為特定行程指派學生至不同車輛</p>
-
-    <div class="admin-cards">
-        <div class="config-card">
-            <h3>新增臨時指派</h3>
-            <div class="form-group">
-                <label>日期</label>
-                <input type="date" id="temp-date" onchange="updateOccupancy()">
-            </div>
-            <div class="form-group">
-                <label>時段</label>
-                <select id="temp-slot" onchange="updateOccupancy()"></select>
-            </div>
-            <div class="form-group">
-                <label>目標車輛</label>
-                <select id="temp-bus" onchange="updateOccupancy()"></select>
-            </div>
-            <div class="form-group">
-                <label>學生 UID (10 碼)</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="temp-uid" placeholder="輸入 10 碼 UID" oninput="lookupStudent()">
-                    <button onclick="lookupStudent()" class="secondary-btn" style="width: auto; margin: 0;">查詢</button>
-                </div>
-                <p id="temp-student-info" style="font-size: 13px; margin-top: 5px; color: var(--secondary-text);"></p>
-            </div>
-            <div class="form-group">
-                <label>學生姓名</label>
-                <input type="text" id="temp-name" placeholder="輸入學生姓名">
-            </div>
-            <div class="form-group">
-                <label>學號/座號 (選填)</label>
-                <input type="text" id="temp-badge" placeholder="輸入學號">
-            </div>
-
-            <div id="occupancy-info" class="review-summary" style="display: none; margin-bottom: 15px;">
-                <strong>車輛負載:</strong> <span id="occupancy-count">0</span> 位學生已指派
-            </div>
-
-            <button id="add-temp-btn" onclick="addTemporaryRider()" class="primary-btn">新增指派</button>
-            <p id="status-temp" class="status-msg"></p>
-        </div>
-
-        <div class="config-card" style="grid-column: 1 / -1;">
-            <h3>目前臨時指派列表</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>時段</th>
-                            <th>車次</th>
-                            <th>學生</th>
-                            <th>學號</th>
-                            <th>UID</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="temp-riders-body">
-                        <!-- Temporary riders list -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="photosTab" class="tab-content">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; gap: 20px;">
-        <div style="flex: 1;">
-            <h1>相片庫</h1>
-            <p class="subtitle">管理存儲於 Firestore 中的學生相片</p>
-            <div style="width: 100%; max-width: 400px; margin-top: 10px;">
-                <input type="text" id="photo-search" placeholder="搜尋姓名、UID 或學號..." oninput="filterPhotos()" class="table-input" style="width: 100%; padding: 10px 15px !important;">
-            </div>
-        </div>
-
-        <div class="config-card" style="margin: 0; flex: 1; max-width: 450px; padding: 1.5rem;">
-            <h3 style="margin-top: 0;">批量上傳相片</h3>
-            <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">檔名必須符合學生 **學號** (例如: 211002.jpg)</p>
-            <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="margin-bottom: 10px;">
-            <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 10px; font-size: 14px;">上傳多個檔案</button>
-            <div id="bulk-upload-status" class="status-msg" style="text-align: left; font-size: 12px; white-space: pre-line;"></div>
-        </div>
-    </div>
-
-    <div id="photo-grid" class="photo-grid">
-        <!-- Photo cards injected here -->
-    </div>
-</div>
-<div id="configTab" class="tab-content">
-    <h1>系統管理</h1>
-    <p class="subtitle">更新系統資料與時段配置</p>
-
-    <div class="admin-cards">
-        <!-- Account Management Card -->
-        <div class="config-card" style="grid-column: 1 / -1;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="margin: 0;">帳號管理</h3>
-                <button onclick="saveAccounts()" id="save-accounts-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">儲存變更</button>
-            </div>
-            
-            <div style="background: #f5f5f7; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
-                <h4 style="margin: 0 0 1rem 0; font-size: 13px;">新增帳號</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                    <input type="text" id="new-account-username" placeholder="使用者名稱" class="table-input">
-                    <input type="password" id="new-account-password" placeholder="密碼" class="table-input">
-                    <input type="text" id="new-account-name" placeholder="顯示名稱" class="table-input">
-                    <select id="new-account-type" class="table-input">
-                        <option value="user">一般使用者</option>
-                        <option value="admin">管理員</option>
-                    </select>
-                    <button onclick="addAccount()" class="secondary-btn" style="margin: 0; height: 38px;">新增</button>
-                </div>
-                <p id="status-accounts" class="status-msg" style="margin-top: 10px;"></p>
-            </div>
-
-            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                <table id="accounts-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Password</th>
-                            <th>Display Name</th>
-                            <th>Type</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="accounts-body">
-                        <!-- Account rows -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Time Slot Mapping Card -->
-        <div class="config-card" style="grid-column: 1 / -1;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="margin: 0;">Time Slot Mapping</h3>
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="resetToDefaults()" class="secondary-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">Reset to Defaults</button>
-                            <button onclick="saveSlots()" id="save-slots-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">Save Changes</button>
-                        </div>
-                    </div>
-                    <div style="background: #f5f5f7; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
-                        <h4 style="margin: 0 0 0.5rem 0; font-size: 13px;">Default Slot (Outside mappings)</h4>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 11px; margin-bottom: 2px;">Default List</label>
-                                <select id="default-slot-csv" class="table-input" onchange="updateDefaultSlot()">
-                                    <option value="arrival">Arrival</option>
-                                    <option value="full_departure">Full Departure</option>
-                                    <option value="night_class_afternoon">Night Afternoon</option>
-                                    <option value="night_class_night">Night Night</option>
-                                </select>
-                            </div>
-                            <div style="flex: 1;">
-                                <label style="font-size: 11px; margin-bottom: 2px;">Default Label</label>
-                                <input type="text" id="default-slot-label" class="table-input" onchange="updateDefaultSlot()">
-                            </div>
-                        </div>
-                    </div>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">
-                        Define which student and bus lists are used for each time period. Temporary slots take priority.
-                    </p>
-                    <div class="preview-container" style="display: block; max-height: 400px; margin-top: 0; background: white;">
-                        <table id="slots-table">
-                            <thead>
-                                <tr>
-                                    <th>日期</th>
-                                    <th>開始 (HH:mm)</th>
-                                    <th>結束 (HH:mm)</th>
-                                    <th>對應名單</th>
-                                    <th>名稱</th>
-                                    <th>類型</th>
-                                    <th style="width: 50px;">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="slots-body">
-                                <!-- Dynamic rows -->
-                            </tbody>
-                            <tfoot>
-                                <tr style="background: #fbfbfd; border-top: 2px solid #d2d2d7;">
-                                    <td>
-                                        <select id="new-slot-day" class="table-input">
-                                            <option value="">每天</option>
-                                            <option value="group:1,2,3,4">週一至週四</option>
-                                            <option value="group:5,6,0">週五至週日</option>
-                                            <option value="1">週一</option>
-                                            <option value="2">週二</option>
-                                            <option value="3">週三</option>
-                                            <option value="4">週四</option>
-                                            <option value="5">週五</option>
-                                            <option value="6">週六</option>
-                                            <option value="0">週日</option>
-                                        </select>
-                                    </td>
-                                    <td><input type="text" id="new-slot-start" placeholder="07:00" class="table-input"></td>
-                                    <td><input type="text" id="new-slot-end" placeholder="09:00" class="table-input"></td>
-                                    <td>
-                                        <select id="new-slot-csv" class="table-input">
-                                            <option value="arrival">早上名單</option>
-                                            <option value="full_departure">下午名單</option>
-                                            <option value="night_class_afternoon">夜間下午名單</option>
-                                            <option value="night_class_night">夜間晚上名單</option>
-                                        </select>
-                                    </td>
-                                    <td><input type="text" id="new-slot-label" placeholder="顯示名稱" class="table-input"></td>
-                                    <td>
-                                        <select id="new-slot-type" class="table-input">
-                                            <option value="permanent">永久</option>
-                                            <option value="temp">臨時</option>
-                                        </select>
-                                    </td>
-                                    <td><button onclick="addSlot()" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px;">新增</button></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <p id="status-slots" class="status-msg"></p>
-                </div>
-
-                <!-- Students Card -->
-                <div class="config-card">
-                    <h3>學生名單管理</h3>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">上傳 CSV 檔案以更新特定時段的學生名單。</p>
-                    
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label style="font-size: 12px;">目標名單</label>
-                        <select id="student-list-type" onchange="resetStudentPreview()">
-                            <option value="arrival">早上名單 (主要名單)</option>
-                            <option value="full_departure">下午名單 (週五 16-18)</option>
-                            <option value="night_class_afternoon">夜間下午名單 (週一至四 16-18)</option>
-                            <option value="night_class_night">夜間晚上名單 (週一至四 19-21)</option>
-                        </select>
-                    </div>
-
-                    <input type="file" id="file-students" accept=".csv">
-                    <div class="btn-group">
-                        <button class="secondary-btn" onclick="previewCSV('students')">預覽</button>
-                        <button id="upload-students" onclick="uploadConfig('students')" disabled>上傳並覆蓋</button>
-                    </div>
-                    <p id="status-students" class="status-msg"></p>
-                    <div id="preview-students" class="preview-container" style="display:none"></div>
-                </div>
-
-                <!-- Buses Card -->
-                <div class="config-card">
-                    <h3>車次管理</h3>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">更新不同時段的可用車次列表。</p>
-                    
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label style="font-size: 12px;">目標列表</label>
-                        <select id="bus-list-type" onchange="resetBusPreview()">
-                            <option value="arrival">早上名單 (主要列表)</option>
-                            <option value="full_departure">下午列表</option>
-                            <option value="night_class_afternoon">夜間下午列表</option>
-                            <option value="night_class_night">夜間晚上列表</option>
-                        </select>
-                    </div>
-
-                    <input type="file" id="file-buses" accept=".csv">
-                    <div class="btn-group">
-                        <button class="secondary-btn" onclick="previewCSV('buses')">預覽</button>
-                        <button id="upload-buses" onclick="uploadConfig('buses')" disabled>上傳</button>
-                    </div>
-                    <p id="status-buses" class="status-msg"></p>
-                    <div id="preview-buses" class="preview-container" style="display:none"></div>
-                </div>
-                        <button id="upload-buses" onclick="uploadConfig('buses')" disabled>Upload</button>
-                    </div>
-                    <p id="status-buses" class="status-msg"></p>
-                    <div id="preview-buses" class="preview-container" style="display:none"></div>
-                </div>
-
-                <!-- Photo Management Card -->
-                <div class="config-card">
-                    <h3>單筆相片管理</h3>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">直接為特定學生上傳相片至資料庫。</p>
-                    
-                    <div class="form-group">
-                        <label>學生 UID</label>
-                        <input type="text" id="photo-upload-uid" placeholder="輸入學生 UID" class="table-input">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>選擇相片 (僅限 JPG, 建議 500KB 以下)</label>
-                        <input type="file" id="photo-upload-file" accept=".jpg,.jpeg">
-                    </div>
-
-                    <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="background-color: var(--primary); color: white; border: none; width: 100%;">上傳至資料庫</button>
-                    <p id="status-photo-upload" class="status-msg"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
+        const AUTH_TOKEN = "secret-bus-token-2026";
         const BASE_URL = localStorage.getItem('apiUrl') || 
                         (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://bus-rollcall-api.vercel.app');
+
+        let authToken = localStorage.getItem('adminToken') || '';
+        let adminName = localStorage.getItem('adminName') || '管理員';
+        let accounts = [];
+        let slotConfigs = [];
+        let defaultSlot = { csvType: 'arrival', label: '不在時段內' };
+        let allPhotos = [];
+        let allStudentsList = [];
+
+        document.getElementById('datePicker').valueAsDate = new Date();
+
+        if (authToken) { showDashboard(); }
 
         function openSettings() {
             document.getElementById('settingsModal').style.display = 'flex';
@@ -792,187 +388,274 @@
 
         function saveSettings() {
             const url = document.getElementById('apiUrlInput').value.trim();
-            if (url) {
-                localStorage.setItem('apiUrl', url);
-                location.reload();
-            }
-            document.getElementById('settingsModal').style.display = 'none';
+            if (url) { localStorage.setItem('apiUrl', url); location.reload(); }
         }
 
         async function testConnection() {
-            const url = document.getElementById('apiUrlInput').value.trim() || 
-                       (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://bus-rollcall-api.vercel.app');
+            const url = document.getElementById('apiUrlInput').value.trim() || BASE_URL;
             const status = document.getElementById('testStatus');
             status.textContent = '測試中...';
-            status.className = 'status-msg';
-
             try {
-                const controller = new AbortController();
-                const id = setTimeout(() => controller.abort(), 5000);
-                const response = await fetch(`${url}/api/buses`, { signal: controller.signal });
-                clearTimeout(id);
-                if (response.status === 401 || response.ok) {
-                    status.textContent = '連接成功！';
-                    status.className = 'status-msg success';
-                } else {
-                    status.textContent = `伺服器回應錯誤: ${response.status}`;
-                    status.className = 'status-msg error';
-                }
-            } catch (err) {
-                status.textContent = '連接失敗，請檢查 URL 與 CORS 設定。';
-                status.className = 'status-msg error';
-            }
+                const res = await fetch(`${url}/api/buses`, { headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` } });
+                if (res.status === 401 || res.ok) { status.textContent = '連接成功！'; status.className = 'status-msg success'; }
+                else { status.textContent = '連接失敗'; status.className = 'status-msg error'; }
+            } catch (err) { status.textContent = '網路錯誤'; status.className = 'status-msg error'; }
         }
 
-        let authToken = localStorage.getItem('adminToken') || '';
-        let adminName = localStorage.getItem('adminName') || 'Admin';
-        let adminUser = localStorage.getItem('adminUser') || '';
-        let parsedData = { students: null, buses: null, accounts: null };
-        let allStudentsList = []; // For badge->UID mapping
+        async function login() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const error = document.getElementById('loginError');
+            if (!user || !pass) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminName', data.user.name);
+                    authToken = data.token;
+                    adminName = data.user.name;
+                    showDashboard();
+                } else { error.textContent = data.error || '登入失敗'; }
+            } catch (err) { error.textContent = '網路錯誤'; }
+            finally { btn.disabled = false; }
+        }
 
-        document.getElementById('datePicker').valueAsDate = new Date();
+        function logout() {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        }
 
-        if (authToken) {
-            showDashboard();
+        function showDashboard() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('welcomeText').textContent = `您好，${adminName}`;
+            fetchAccounts();
+            fetchSlots();
+            fetchPhotos();
+            fetchGlobalStudents();
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            if (tabName === 'export') {
-                document.querySelector('.tab:nth-child(1)').classList.add('active');
-                document.getElementById('exportTab').classList.add('active');
-            } else if (tabName === 'temp-riders') {
-                document.querySelector('.tab:nth-child(2)').classList.add('active');
-                document.getElementById('tempRidersTab').classList.add('active');
-                fetchTempRiders();
-                populateSelectors();
-            } else if (tabName === 'photos') {
-                document.querySelector('.tab:nth-child(3)').classList.add('active');
-                document.getElementById('photosTab').classList.add('active');
-                fetchPhotos();
-            } else {
-                document.querySelector('.tab:nth-child(4)').classList.add('active');
-                document.getElementById('configTab').classList.add('active');
-                fetchAccounts();
-                fetchSlots();
-            }
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            if (tabName === 'temp-riders') { fetchTempRiders(); populateSelectors(); }
+            if (tabName === 'photos') { fetchPhotos(); }
         }
 
-        function populateSelectors() {
-            const slotSelect = document.getElementById('temp-slot');
-            const busSelect = document.getElementById('temp-bus');
-            const mainSlotSelect = document.getElementById('slotPicker');
-            const dateInput = document.getElementById('temp-date');
-            
-            if (!dateInput.value) dateInput.valueAsDate = new Date();
+        async function fetchAccounts() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/admin/accounts`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) { accounts = await res.json(); renderAccounts(); }
+            } catch (err) { console.error(err); }
+        }
 
-            // Sync slots from the main picker or predefined ones
-            slotSelect.innerHTML = '';
-            const slots = [
-                "07:00-09:00",
-                "16:00-18:00",
-                "19:00-21:00",
-                "Not in time"
-            ];
-            slots.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                slotSelect.appendChild(opt);
+        function renderAccounts() {
+            const body = document.getElementById('accounts-body');
+            body.innerHTML = '';
+            accounts.forEach((acc, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${acc.username}</td>
+                    <td>•••••••• <button class="text-btn" onclick="resetPassword(${index})">重設</button></td>
+                    <td><input type="text" value="${acc.name}" onchange="accounts[${index}].name=this.value" class="table-input"></td>
+                    <td><select onchange="accounts[${index}].type=this.value" class="table-input"><option value="user" ${acc.type==='user'?'selected':''}>使用者</option><option value="admin" ${acc.type==='admin'?'selected':''}>管理員</option></select></td>
+                    <td><button class="delete-btn" onclick="accounts.splice(${index},1);renderAccounts()">刪除</button></td>
+                `;
+                body.appendChild(tr);
             });
-
-            // Fetch buses to populate the bus select
-            fetchBusesForTemp();
         }
 
-        async function fetchBusesForTemp() {
-            const busSelect = document.getElementById('temp-bus');
-            try {
-                // Fetch for Morning as a baseline
-                const response = await fetch(`${BASE_URL}/api/buses`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const buses = await response.json();
-                busSelect.innerHTML = '<option value="">Select Bus</option>';
-                buses.forEach(b => {
-                    const name = typeof b === 'string' ? b : b.name;
-                    const opt = document.createElement('option');
-                    opt.value = name;
-                    opt.textContent = name;
-                    busSelect.appendChild(opt);
-                });
-            } catch (err) {
-                console.error('Error fetching buses:', err);
-            }
+        function resetPassword(index) {
+            const p = prompt(`請輸入 ${accounts[index].username} 的新密碼:`);
+            if (p) { accounts[index].password = p; alert('密碼已修改，請記得儲存變更。'); }
         }
 
-        let studentCache = null;
-        async function lookupStudent() {
-            const uid = document.getElementById('temp-uid').value.trim();
-            const info = document.getElementById('temp-student-info');
-            const nameInput = document.getElementById('temp-name');
-            const badgeInput = document.getElementById('temp-badge');
-            if (!uid) { info.textContent = ''; return; }
-            
+        async function saveAccounts() {
+            const status = document.getElementById('status-accounts');
             try {
-                const response = await fetch(`${BASE_URL}/api/student/${uid}`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const res = await fetch(`${BASE_URL}/api/admin/config/accounts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify(accounts)
                 });
-                if (response.ok) {
-                    const student = await response.json();
-                    studentCache = student;
-                    info.textContent = `✅ Found: ${student.name} | Bus: ${student.bus || 'None'}`;
-                    info.style.color = 'green';
-                    nameInput.value = student.name;
-                    badgeInput.value = student.badge || '';
-                } else {
-                    studentCache = null;
-                    info.textContent = 'ℹ️ New Student (Not in database)';
-                    info.style.color = 'var(--secondary-text)';
-                }
-            } catch (err) {
-                info.textContent = 'Network error';
-            }
+                if (res.ok) { status.textContent = '帳號已更新'; status.className = 'status-msg success'; }
+            } catch (err) { status.textContent = '網路錯誤'; status.className = 'status-msg error'; }
         }
 
-        async function updateOccupancy() {
-            const date = document.getElementById('temp-date').value;
-            const slot = document.getElementById('temp-slot').value;
-            const bus = document.getElementById('temp-bus').value;
-            const infoBox = document.getElementById('occupancy-info');
-            const countSpan = document.getElementById('occupancy-count');
-
-            if (!date || !slot || !bus) {
-                infoBox.style.display = 'none';
-                return;
-            }
-
+        async function fetchSlots() {
             try {
-                const url = `${BASE_URL}/api/admin/bus-occupancy?date=${date}&timeSlot=${encodeURIComponent(slot)}&bus=${encodeURIComponent(bus)}`;
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    const count = data.count;
-                    const limit = data.overflowLimit || 40;
-                    
-                    countSpan.textContent = `${count} / ${limit}`;
-                    infoBox.style.display = 'block';
-                    
-                    // Capacity warning
-                    if (count >= limit) {
-                        countSpan.style.color = 'red';
-                        countSpan.innerHTML += " (OVERFLOW!)";
-                    } else if (count >= (limit - 5)) {
-                        countSpan.style.color = 'orange';
-                        countSpan.innerHTML += " (Near limit)";
-                    } else {
-                        countSpan.style.color = 'green';
-                    }
+                const res = await fetch(`${BASE_URL}/api/admin/config/slots`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) {
+                    const data = await res.json();
+                    slotConfigs = data.slots || [];
+                    defaultSlot = data.default || defaultSlot;
+                    document.getElementById('default-slot-csv').value = defaultSlot.csvType;
+                    document.getElementById('default-slot-label').value = defaultSlot.label;
+                    renderSlots();
                 }
             } catch (err) { console.error(err); }
+        }
+
+        function renderSlots() {
+            const body = document.getElementById('slots-body');
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            body.innerHTML = '';
+            slotConfigs.forEach((s, i) => {
+                let dText = '每天';
+                if (s.day !== undefined) dText = `週${days[s.day]}`;
+                else if (s.days) dText = s.days.map(d => days[d]).join(',');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${dText}</td><td>${s.start}</td><td>${s.end}</td><td>${s.csvType}</td><td>${s.label}</td><td>${s.isTemp?'臨時':'永久'}</td><td><button class="delete-btn" onclick="slotConfigs.splice(${i},1);renderSlots()">刪除</button></td>`;
+                body.appendChild(tr);
+            });
+        }
+
+        async function saveSlots() {
+            const status = document.getElementById('status-slots');
+            try {
+                const res = await fetch(`${BASE_URL}/api/admin/config/slots`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ slots: slotConfigs, default: defaultSlot })
+                });
+                if (res.ok) { status.textContent = '配置已儲存'; status.className = 'status-msg success'; }
+            } catch (err) { status.textContent = '網路錯誤'; status.className = 'status-msg error'; }
+        }
+
+        function resetToDefaults() {
+            if (confirm('確定要重設嗎？')) {
+                slotConfigs = [
+                    { start: "07:00", end: "09:00", csvType: "arrival", label: "早上" },
+                    { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "週五下午" },
+                    { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "週一至四下午" },
+                    { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "週一至四晚上" }
+                ];
+                renderSlots();
+            }
+        }
+
+        async function fetchPhotos() {
+            const grid = document.getElementById('photo-grid');
+            grid.innerHTML = '<div class="spinner"></div>';
+            try {
+                const res = await fetch(`${BASE_URL}/api/admin/photos`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) { allPhotos = await res.json(); renderPhotos(allPhotos); }
+            } catch (err) { grid.innerHTML = '載入失敗'; }
+        }
+
+        function renderPhotos(photos) {
+            const grid = document.getElementById('photo-grid');
+            grid.innerHTML = '';
+            photos.forEach(p => {
+                const url = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
+                const div = document.createElement('div');
+                div.className = 'photo-card';
+                div.innerHTML = `
+                    <div class="photo-card-actions"><button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}','${p.name}')">✕</button></div>
+                    <div class="photo-card-img" onclick="window.open('${url}','_blank')"><img src="${url}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'"></div>
+                    <div class="photo-card-info"><div class="photo-card-name">${p.name}</div><div class="photo-card-uid">${p.uid}</div></div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function filterPhotos() {
+            const q = document.getElementById('photo-search').value.toLowerCase();
+            renderPhotos(allPhotos.filter(p => p.name.toLowerCase().includes(q) || p.uid.includes(q) || (p.badge && p.badge.includes(q))));
+        }
+
+        async function deletePhoto(uid, name) {
+            if (confirm(`確定要刪除 ${name} 的相片嗎？`)) {
+                const res = await fetch(`${BASE_URL}/api/admin/student/photo/${uid}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) { allPhotos = allPhotos.filter(p => p.uid !== uid); renderPhotos(allPhotos); }
+            }
+        }
+
+        async function uploadStudentPhoto() {
+            const uid = document.getElementById('photo-upload-uid').value.trim();
+            const file = document.getElementById('photo-upload-file').files[0];
+            if (!uid || !file) return;
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const photo = reader.result.split(',')[1];
+                const res = await fetch(`${BASE_URL}/api/admin/student/photo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ uid, photo })
+                });
+                if (res.ok) { alert('上傳成功'); fetchPhotos(); }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadBulkPhotos() {
+            const files = document.getElementById('photo-bulk-input').files;
+            const status = document.getElementById('bulk-upload-status');
+            if (!files.length) return;
+            status.textContent = `處理中... (0/${files.length})`;
+            let count = 0;
+            for (const f of files) {
+                const badge = f.name.split('.')[0];
+                const student = allStudentsList.find(s => s.badge === badge);
+                if (student) {
+                    const base64 = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result.split(',')[1]); reader.readAsDataURL(f); });
+                    await fetch(`${BASE_URL}/api/admin/student/photo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                        body: JSON.stringify({ uid: student.uid, photo: base64 })
+                    });
+                    count++;
+                }
+                status.textContent = `處理中... (${count}/${files.length})`;
+            }
+            status.textContent = `上傳完成！共成功上傳 ${count} 張相片。`;
+            fetchPhotos();
+        }
+
+        async function fetchGlobalStudents() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/students`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) allStudentsList = Object.values(await res.json());
+            } catch (err) {}
+        }
+
+        async function fetchTempRiders() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/admin/temporary-riders`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) renderTempRiders(await res.json());
+            } catch (err) {}
+        }
+
+        function renderTempRiders(riders) {
+            const body = document.getElementById('temp-riders-body');
+            body.innerHTML = '';
+            const now = new Date();
+            const taipei = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+            taipei.setHours(0,0,0,0);
+            const cutoff = new Date(taipei);
+            cutoff.setDate(cutoff.getDate() - 1);
+
+            riders.filter(r => new Date(r.date) >= cutoff).sort((a,b) => b.date.localeCompare(a.date)).forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.date}</td><td>${r.timeSlot}</td><td>${r.bus}</td><td>${r.name}</td><td>${r.badge||'---'}</td><td>${r.uid}</td><td><button class="delete-btn" onclick="deleteTempRider('${r.id}')">刪除</button></td>`;
+                body.appendChild(tr);
+            });
+        }
+
+        async function deleteTempRider(id) {
+            if (confirm('確定要刪除嗎？')) {
+                await fetch(`${BASE_URL}/api/admin/temporary-riders/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
+                fetchTempRiders();
+            }
         }
 
         async function addTemporaryRider() {
@@ -982,903 +665,140 @@
             const uid = document.getElementById('temp-uid').value.trim();
             const name = document.getElementById('temp-name').value.trim();
             const badge = document.getElementById('temp-badge').value.trim();
-            const status = document.getElementById('status-temp');
-            const btn = document.getElementById('add-temp-btn');
+            if (!date || !slot || !bus || !uid || !name) return;
+            const res = await fetch(`${BASE_URL}/api/admin/temporary-riders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ date, timeSlot: slot, bus, uid, name, badge })
+            });
+            if (res.ok) { fetchTempRiders(); document.getElementById('temp-uid').value = ''; document.getElementById('temp-name').value = ''; }
+        }
 
-            if (!date || !slot || !bus || !uid || !name) {
-                status.textContent = 'Please fill all fields';
-                status.className = 'status-msg error';
-                return;
-            }
+        function populateSelectors() {
+            const slots = ["07:00-09:00", "16:00-18:00", "19:00-21:00", "Not in time"];
+            const sSelect = document.getElementById('temp-slot');
+            sSelect.innerHTML = '';
+            slots.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sSelect.appendChild(opt); });
+            fetchBusesForTemp();
+        }
 
-            if (!/^\d{10}$/.test(uid)) {
-                status.textContent = 'UID must be exactly 10 digits';
-                status.className = 'status-msg error';
-                return;
-            }
+        async function fetchBusesForTemp() {
+            const res = await fetch(`${BASE_URL}/api/buses`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const buses = await res.json();
+            const bSelect = document.getElementById('temp-bus');
+            bSelect.innerHTML = '<option value="">請選擇車次</option>';
+            buses.forEach(b => { const name = typeof b === 'string' ? b : b.name; const opt = document.createElement('option'); opt.value = name; opt.textContent = name; bSelect.appendChild(opt); });
+        }
 
-            btn.disabled = true;
-            status.textContent = 'Adding...';
-            status.className = 'status-msg';
-
+        async function lookupStudent() {
+            const uid = document.getElementById('temp-uid').value.trim();
+            const info = document.getElementById('temp-student-info');
+            if (!uid) return;
             try {
-                const response = await fetch(`${BASE_URL}/api/admin/temporary-riders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ 
-                        date, 
-                        timeSlot: slot, 
-                        bus, 
-                        uid, 
-                        name: name,
-                        badge: badge || '---'
-                    })
-                });
-                if (response.ok) {
-                    status.textContent = 'Assignment added successfully';
-                    status.className = 'status-msg success';
-                    document.getElementById('temp-uid').value = '';
-                    document.getElementById('temp-name').value = '';
-                    document.getElementById('temp-badge').value = '';
-                    document.getElementById('temp-student-info').textContent = '';
-                    studentCache = null;
-                    fetchTempRiders();
-                    updateOccupancy();
-                } else {
-                    const err = await response.json();
-                    status.textContent = err.error || 'Failed to add';
-                    status.className = 'status-msg error';
-                }
-            } catch (err) {
-                status.textContent = 'Network error';
-                status.className = 'status-msg error';
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        async function fetchTempRiders() {
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/temporary-riders`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    const riders = await response.json();
-                    renderTempRiders(riders);
-                }
-            } catch (err) { console.error(err); }
-        }
-
-        function renderTempRiders(riders) {
-            const body = document.getElementById('temp-riders-body');
-            body.innerHTML = '';
-            
-            // Get current Taipei date for filtering
-            const now = new Date();
-            const taipeiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
-            taipeiDate.setHours(0, 0, 0, 0);
-            
-            // Filter: Hide if assignment date is older than (Today - 1 day)
-            const cutoff = new Date(taipeiDate);
-            cutoff.setDate(cutoff.getDate() - 1);
-
-            riders
-                .filter(rider => {
-                    const riderDate = new Date(rider.date);
-                    return riderDate >= cutoff;
-                })
-                .sort((a,b) => b.date.localeCompare(a.date))
-                .forEach(rider => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${rider.date}</td>
-                        <td>${rider.timeSlot}</td>
-                        <td><span class="bus-badge" style="font-size: 11px;">${rider.bus}</span></td>
-                        <td>${rider.name}</td>
-                        <td>${rider.badge || '---'}</td>
-                        <td style="font-family: monospace;">${rider.uid}</td>
-                        <td><button class="delete-btn" onclick="deleteTempRider('${rider.id}')">Delete</button></td>
-                    `;
-                    body.appendChild(tr);
-                });
-        }
-
-        async function deleteTempRider(id) {
-            if (!confirm('Are you sure you want to remove this temporary assignment?')) return;
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/temporary-riders/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    fetchTempRiders();
-                }
-            } catch (err) { console.error(err); }
-        }
-
-        async function login() {
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-            const btn = document.getElementById('loginBtn');
-            const error = document.getElementById('loginError');
-            if (!user || !pass) {
-                error.textContent = 'Please enter both fields';
-                return;
-            }
-            btn.disabled = true;
-            error.textContent = '';
-            try {
-                const response = await fetch(`${BASE_URL}/api/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    if (data.user.type !== 'admin') {
-                        error.textContent = 'Access denied: Admins only';
-                        return;
-                    }
-                    authToken = data.token;
-                    adminName = data.user.name;
-                    adminUser = data.user.username;
-                    localStorage.setItem('adminToken', authToken);
-                    localStorage.setItem('adminName', adminName);
-                    localStorage.setItem('adminUser', adminUser);
-                    showDashboard();
-                } else {
-                    error.textContent = data.error || 'Login failed';
-                }
-            } catch (err) {
-                error.textContent = 'Network error';
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        function showDashboard() {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('dashboardSection').style.display = 'block';
-            document.getElementById('welcomeText').textContent = `Hi, ${adminName}`;
-            document.querySelector('.container').classList.add('dashboard');
-            fetchAccounts();
-            fetchSlots();
-            fetchGlobalStudents();
-        }
-
-        async function fetchGlobalStudents() {
-            try {
-                const res = await fetch(`${BASE_URL}/api/students`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const res = await fetch(`${BASE_URL}/api/student/${uid}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
                 if (res.ok) {
-                    const data = await res.json();
-                    allStudentsList = Object.values(data);
-                    console.log(`[System] Loaded ${allStudentsList.length} students for mapping.`);
-                }
-            } catch (err) { console.error("Failed to fetch students for mapping", err); }
+                    const s = await res.json();
+                    info.textContent = `✅ 找到學生: ${s.name}`;
+                    document.getElementById('temp-name').value = s.name;
+                    document.getElementById('temp-badge').value = s.badge || '';
+                } else { info.textContent = 'ℹ️ 新學生'; }
+            } catch (err) {}
         }
 
-        let slotConfigs = [];
-        let defaultSlot = { csvType: 'arrival', label: 'Not in time' };
+        async function updateOccupancy() {
+            const date = document.getElementById('temp-date').value;
+            const slot = document.getElementById('temp-slot').value;
+            const bus = document.getElementById('temp-bus').value;
+            if (!date || !slot || !bus) return;
+            const res = await fetch(`${BASE_URL}/api/admin/bus-occupancy?date=${date}&timeSlot=${encodeURIComponent(slot)}&bus=${encodeURIComponent(bus)}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.ok) {
+                const data = await res.json();
+                const box = document.getElementById('occupancy-info');
+                box.style.display = 'block';
+                document.getElementById('occupancy-count').textContent = `${data.count} / ${data.overflowLimit}`;
+            }
+        }
 
-        async function fetchSlots() {
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/config/slots`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const data = await response.json();
-                slotConfigs = data.slots || [];
-                defaultSlot = data.default || { csvType: 'arrival', label: 'Not in time' };
-                document.getElementById('default-slot-csv').value = defaultSlot.csvType;
-                document.getElementById('default-slot-label').value = defaultSlot.label;
-                renderSlots();
-            } catch (err) {
-                console.error('Error fetching slots:', err);
+        // CSV Logic (Simplified localized version)
+        async function previewCSV(type) {
+            const file = document.getElementById(`file-${type}`).files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const lines = e.target.result.split('\n');
+                document.getElementById(`preview-${type}`).style.display = 'block';
+                document.getElementById(`preview-${type}`).textContent = lines.slice(0, 5).join('\n');
+                document.getElementById(`upload-${type}`).disabled = false;
+                parsedData[type] = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        async function uploadConfig(type) {
+            const raw = parsedData[type];
+            if (!raw) return;
+            const lines = raw.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^\ufeff/, ''));
+            const rows = lines.slice(1).map(l => {
+                const values = l.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                let obj = {};
+                headers.forEach((h, i) => obj[h] = values[i]);
+                return obj;
+            });
+
+            const csvType = type === 'accounts' ? null : document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`).value;
+            const payload = type === 'students' ? { students: rows, csvType } : (type === 'buses' ? { buses: rows.map(r => ({ name: r.bus || Object.values(r)[0], overflow: parseInt(r.overflow) || 40 })), csvType } : rows);
+            const url = `${BASE_URL}/api/admin/config/${type}`;
+            
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) { alert('上傳成功'); location.reload(); }
+        }
+
+        async function downloadCSV() {
+            const d = document.getElementById('datePicker').value;
+            const s = document.getElementById('slotPicker').value;
+            if (!d) return;
+            const url = `${BASE_URL}/api/admin/rollcall-csv?date=${d}&timeSlot=${encodeURIComponent(s)}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.ok) {
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `roll-call-${d}-${s}.csv`;
+                a.click();
+            }
+        }
+
+        async function downloadWeekCSV() {
+            const dInput = document.getElementById('datePicker').value;
+            if (!dInput) return;
+            const date = new Date(dInput);
+            const day = date.getDay();
+            const diff = (day === 0 ? -6 : 1) - day;
+            const mon = new Date(date); mon.setDate(date.getDate() + diff);
+            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+            const start = mon.toISOString().split('T')[0];
+            const end = fri.toISOString().split('T')[0];
+            const res = await fetch(`${BASE_URL}/api/admin/rollcall-week?startDate=${start}&endDate=${end}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.ok) {
+                const data = await res.json();
+                for (const name in data.files) {
+                    const blob = new Blob([data.files[name]], { type: 'text/csv;charset=utf-8;' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob); a.download = name;
+                    a.click();
+                    await new Promise(r => setTimeout(r, 300));
+                }
             }
         }
 
         function updateDefaultSlot() {
             defaultSlot.csvType = document.getElementById('default-slot-csv').value;
             defaultSlot.label = document.getElementById('default-slot-label').value;
-        }
-
-        function resetToDefaults() {
-            if (!confirm('這將會以標準預設值取代目前的時段配置。是否繼續？')) return;
-            slotConfigs = [
-                { start: "07:00", end: "09:00", csvType: "arrival", label: "早上" },
-                { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "週五下午" },
-                { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "週一至四下午" },
-                { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "週一至四晚上" }
-            ];
-            defaultSlot = { csvType: "arrival", label: "不在時段內" };
-            document.getElementById('default-slot-csv').value = defaultSlot.csvType;
-            document.getElementById('default-slot-label').value = defaultSlot.label;
-            renderSlots();
-        }
-
-        function renderSlots() {
-            const body = document.getElementById('slots-body');
-            const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-            body.innerHTML = '';
-            slotConfigs.forEach((slot, index) => {
-                let dayText = '每天';
-                if (slot.day !== undefined) dayText = dayNames[slot.day];
-                else if (slot.days !== undefined) {
-                    if (JSON.stringify(slot.days) === '[1,2,3,4]') dayText = '週一至四';
-                    else if (JSON.stringify(slot.days) === '[5,6,0]') dayText = '週五至日';
-                    else dayText = slot.days.map(d => dayNames[d]).join(', ');
-                }
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${dayText}</td>
-                    <td>${slot.start}</td>
-                    <td>${slot.end}</td>
-                    <td>${slot.csvType}</td>
-                    <td>${slot.label}</td>
-                    <td><span class="badge ${slot.isTemp ? 'badge-admin' : 'badge-user'}">${slot.isTemp ? '臨時' : '永久'}</span></td>
-                    <td><button class="delete-btn" onclick="deleteSlot(${index})">刪除</button></td>
-                `;
-                body.appendChild(tr);
-            });
-        }
-
-        function addSlot() {
-            const dayVal = document.getElementById('new-slot-day').value;
-            const start = document.getElementById('new-slot-start').value;
-            const end = document.getElementById('new-slot-end').value;
-            const csvType = document.getElementById('new-slot-csv').value;
-            const label = document.getElementById('new-slot-label').value;
-            const type = document.getElementById('new-slot-type').value;
-            if (!start || !end || !label) {
-                alert('開始時間、結束時間與名稱皆為必填');
-                return;
-            }
-            const newSlot = { start, end, csvType, label, isTemp: type === 'temp' };
-            if (dayVal.startsWith('group:')) {
-                newSlot.days = dayVal.split(':')[1].split(',').map(Number);
-            } else if (dayVal !== "") {
-                newSlot.day = parseInt(dayVal);
-            }
-            for (const s of slotConfigs) {
-                let daysOverlap = false;
-                if (newSlot.day === undefined && newSlot.days === undefined && s.day === undefined && s.days === undefined) daysOverlap = true;
-                else {
-                    const d1 = newSlot.day !== undefined ? [newSlot.day] : (newSlot.days || [0,1,2,3,4,5,6]);
-                    const d2 = s.day !== undefined ? [s.day] : (s.days || [0,1,2,3,4,5,6]);
-                    daysOverlap = d1.some(d => d2.includes(d));
-                }
-                if (daysOverlap) {
-                    if (newSlot.start < s.end && s.start < newSlot.end) {
-                        alert(`偵測到與現有時段重疊: ${s.label}。請調整時間。`);
-                        return;
-                    }
-                }
-            }
-            slotConfigs.push(newSlot);
-            renderSlots();
-            document.getElementById('new-slot-start').value = '';
-            document.getElementById('new-slot-end').value = '';
-            document.getElementById('new-slot-label').value = '';
-        }
-
-        function deleteSlot(index) {
-            slotConfigs.splice(index, 1);
-            renderSlots();
-        }
-
-        async function saveSlots() {
-            const status = document.getElementById('status-slots');
-            const btn = document.getElementById('save-slots-btn');
-            btn.disabled = true;
-            status.textContent = '儲存中...';
-            status.className = 'status-msg';
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/config/slots`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ slots: slotConfigs, default: defaultSlot })
-                });
-                if (response.ok) {
-                    status.textContent = '時段配置已成功儲存';
-                    status.className = 'status-msg success';
-                } else {
-                    const err = await response.json();
-                    status.textContent = err.error || '儲存失敗';
-                    status.className = 'status-msg error';
-                }
-            } catch (err) {
-                status.textContent = '網路錯誤';
-                status.className = 'status-msg error';
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        function resetStudentPreview() {
-            const preview = document.getElementById('preview-students');
-            const status = document.getElementById('status-students');
-            const uploadBtn = document.getElementById('upload-students');
-            const fileInput = document.getElementById('file-students');
-            preview.style.display = 'none';
-            status.textContent = '';
-            uploadBtn.disabled = true;
-            fileInput.value = '';
-            parsedData.students = null;
-        }
-
-        function logout() {
-            localStorage.clear();
-            location.reload();
-        }
-
-        async function downloadCSV() {
-            const date = document.getElementById('datePicker').value;
-            const slot = document.getElementById('slotPicker').value;
-            const btn = document.getElementById('downloadBtn');
-            const error = document.getElementById('downloadError');
-            if (!date) {
-                error.textContent = 'Please select a date';
-                return;
-            }
-            btn.disabled = true;
-            error.textContent = '';
-            try {
-                const url = `${BASE_URL}/api/admin/rollcall-csv?date=${date}&timeSlot=${encodeURIComponent(slot)}`;
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `roll-call-${date}-${slot.replace(':','-')}.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(downloadUrl);
-                    a.remove();
-                } else {
-                    const err = await response.json();
-                    error.textContent = err.error || 'No records found for this selection';
-                }
-            } catch (err) {
-                error.textContent = 'Network error';
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        async function downloadWeekCSV() {
-            const dateInput = document.getElementById('datePicker').value;
-            const btn = document.getElementById('downloadWeekBtn');
-            const error = document.getElementById('downloadError');
-            if (!dateInput) {
-                error.textContent = 'Please select a date within the target week';
-                return;
-            }
-
-            // Calculate Mon-Fri of the selected week
-            const selectedDate = new Date(dateInput);
-            const day = selectedDate.getDay(); // 0 is Sun, 1 is Mon, ... 6 is Sat
-            const diffToMon = (day === 0 ? -6 : 1) - day;
-            const mon = new Date(selectedDate);
-            mon.setDate(selectedDate.getDate() + diffToMon);
-            
-            const fri = new Date(mon);
-            fri.setDate(mon.getDate() + 4);
-
-            const startDate = mon.toISOString().split('T')[0];
-            const endDate = fri.toISOString().split('T')[0];
-
-            btn.disabled = true;
-            const originalText = btn.textContent;
-            btn.textContent = 'Generating Files...';
-            error.textContent = '';
-            
-            try {
-                const url = `${BASE_URL}/api/admin/rollcall-week?startDate=${startDate}&endDate=${endDate}`;
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const files = data.files;
-                    const filenames = Object.keys(files);
-                    
-                    if (filenames.length === 0) {
-                        error.textContent = 'No records found for this week';
-                    } else {
-                        // Download each file with a slight delay to avoid browser blocking multiple downloads
-                        for (let i = 0; i < filenames.length; i++) {
-                            const filename = filenames[i];
-                            const content = files[filename];
-                            
-                            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-                            const downloadUrl = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = downloadUrl;
-                            a.download = filename;
-                            document.body.appendChild(a);
-                            
-                            // Delay to prevent browser download batch limits
-                            await new Promise(resolve => setTimeout(resolve, 300));
-                            
-                            a.click();
-                            window.URL.revokeObjectURL(downloadUrl);
-                            a.remove();
-                        }
-                        btn.textContent = 'Downloads Started!';
-                        setTimeout(() => { btn.textContent = originalText; }, 3000);
-                    }
-                } else {
-                    const err = await response.json();
-                    error.textContent = err.error || 'Failed to generate weekly records';
-                }
-            } catch (err) {
-                console.error(err);
-                error.textContent = 'Network error while fetching weekly records';
-            } finally {
-                btn.disabled = false;
-                if (btn.textContent === 'Generating Files...') {
-                    btn.textContent = originalText;
-                }
-            }
-        }
-
-        function parseCSV(text) {
-            if (text.startsWith('\ufeff')) {
-                text = text.slice(1);
-            }
-            const lines = text.split(/\r?\n/);
-            if (lines.length === 0) return [];
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
-            const results = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
-                const obj = {};
-                headers.forEach((header, index) => {
-                    if (header) {
-                        obj[header] = values[index] || '';
-                    }
-                });
-                results.push(obj);
-            }
-            return results;
-        }
-
-        async function previewCSV(type) {
-            const fileInput = document.getElementById(`file-${type}`);
-            const status = document.getElementById(`status-${type}`);
-            const preview = document.getElementById(`preview-${type}`);
-            const uploadBtn = document.getElementById(`upload-${type}`);
-            if (!fileInput.files || fileInput.files.length === 0) {
-                status.textContent = 'Please select a file first';
-                status.className = 'status-msg error';
-                return;
-            }
-            try {
-                const file = fileInput.files[0];
-                const text = await file.text();
-                const data = parseCSV(text);
-                if (data.length === 0) {
-                    status.textContent = 'CSV file is empty or invalid';
-                    status.className = 'status-msg error';
-                    return;
-                }
-                const headers = Object.keys(data[0]);
-                let isValid = false;
-                if (type === 'students') isValid = headers.includes('uid') && headers.includes('name') && headers.includes('badge');
-                if (type === 'buses') isValid = headers.includes('bus') && headers.includes('overflow');
-                if (type === 'accounts') isValid = headers.includes('username') && headers.includes('password');
-                if (!isValid) {
-                    status.textContent = `Invalid CSV structure for ${type}. Check headers.`;
-                    status.className = 'status-msg error';
-                    return;
-                }
-                parsedData[type] = data;
-                status.textContent = `Found ${data.length} records`;
-                status.className = 'status-msg';
-                let html = '<table><thead><tr>';
-                headers.forEach(h => html += `<th>${h}</th>`);
-                html += '</tr></thead><tbody>';
-                data.slice(0, 10).forEach(row => {
-                    html += '<tr>';
-                    headers.forEach(h => html += `<td>${row[h]}</td>`);
-                    html += '</tr>';
-                });
-                if (data.length > 10) html += `<tr><td colspan="${headers.length}" style="text-align:center; color: var(--secondary-text)">... and ${data.length - 10} more rows</td></tr>`;
-                html += '</tbody></table>';
-                preview.innerHTML = html;
-                preview.style.display = 'block';
-                uploadBtn.disabled = false;
-            } catch (err) {
-                status.textContent = 'Error reading file';
-                status.className = 'status-msg error';
-            }
-        }
-
-        function resetBusPreview() {
-            const preview = document.getElementById('preview-buses');
-            const status = document.getElementById('status-buses');
-            const uploadBtn = document.getElementById('upload-buses');
-            const fileInput = document.getElementById('file-buses');
-            preview.style.display = 'none';
-            status.textContent = '';
-            uploadBtn.disabled = true;
-            fileInput.value = '';
-            parsedData.buses = null;
-        }
-
-        async function uploadConfig(type) {
-            const status = document.getElementById(`status-${type}`);
-            const btn = document.getElementById(`upload-${type}`);
-            let data = parsedData[type];
-            if (!data) return;
-            let payload = data;
-            if (type === 'students') {
-                const csvType = document.getElementById('student-list-type').value;
-                payload = { students: data, csvType };
-            } else if (type === 'buses') {
-                const csvType = document.getElementById('bus-list-type').value;
-                const busList = data.map(item => ({
-                    name: item.bus || Object.values(item)[0],
-                    overflow: parseInt(item.overflow) || 40
-                })).filter(b => b.name);
-                payload = { buses: busList, csvType };
-            }
-            btn.disabled = true;
-            status.textContent = 'Uploading...';
-            status.className = 'status-msg';
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/config/${type}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    status.textContent = result.message || 'Upload successful';
-                    status.className = 'status-msg success';
-                    btn.disabled = true;
-                } else {
-                    status.textContent = result.error || 'Upload failed';
-                    status.className = 'status-msg error';
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                status.textContent = 'Network error';
-                status.className = 'status-msg error';
-                btn.disabled = false;
-            }
-        }
-
-        let accounts = [];
-
-        async function fetchAccounts() {
-            const status = document.getElementById('status-accounts');
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/accounts`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    accounts = await response.json();
-                    renderAccounts();
-                } else {
-                    const errText = await response.text();
-                    status.textContent = `取得帳號失敗 (${response.status})`;
-                    status.className = 'status-msg error';
-                }
-            } catch (err) {
-                status.textContent = `網路錯誤: ${err.message}`;
-                status.className = 'status-msg error';
-            }
-        }
-
-        function renderAccounts() {
-            const body = document.getElementById('accounts-body');
-            body.innerHTML = '';
-            accounts.forEach((acc, index) => {
-                const type = acc.type || 'user';
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight: 500;">${acc.username}</td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="color: var(--secondary-text);">••••••••</span>
-                            <button class="text-btn" style="font-size: 11px;" onclick="resetPassword(${index})">重設</button>
-                        </div>
-                    </td>
-                    <td><input type="text" value="${acc.name}" onchange="updateAccount(${index}, 'name', this.value)" class="table-input"></td>
-                    <td>
-                        <select onchange="updateAccount(${index}, 'type', this.value); this.className='table-input badge ' + (this.value === 'admin' ? 'badge-admin' : 'badge-user')" class="table-input badge ${type === 'admin' ? 'badge-admin' : 'badge-user'}" style="padding: 4px 6px !important; border: none; font-size: 11px;">
-                            <option value="user" ${type === 'user' ? 'selected' : ''}>一般使用者</option>
-                            <option value="admin" ${type === 'admin' ? 'selected' : ''}>管理員</option>
-                        </select>
-                    </td>
-                    <td><button class="delete-btn" onclick="deleteAccount(${index})">刪除</button></td>
-                `;
-                body.appendChild(tr);
-            });
-        }
-
-        function resetPassword(index) {
-            const newPass = prompt(`Enter new password for ${accounts[index].username}:`);
-            if (newPass && newPass.trim()) {
-                accounts[index].password = newPass.trim();
-                alert('Password set! Remember to "Save Changes" to persist to the server.');
-            }
-        }
-
-        function updateAccount(index, field, value) {
-            accounts[index][field] = value;
-        }
-
-        function addAccount() {
-            const userInp = document.getElementById('new-account-username');
-            const passInp = document.getElementById('new-account-password');
-            const nameInp = document.getElementById('new-account-name');
-            const typeInp = document.getElementById('new-account-type');
-            const status = document.getElementById('status-accounts');
-            const username = userInp.value.trim();
-            const password = passInp.value.trim();
-            const name = nameInp.value.trim();
-            const type = typeInp.value;
-            if (!username || !password || !name) {
-                status.textContent = 'Please fill all fields';
-                status.className = 'status-msg error';
-                return;
-            }
-            if (accounts.some(a => a.username === username)) {
-                status.textContent = 'Username already exists';
-                status.className = 'status-msg error';
-                return;
-            }
-            accounts.push({ username, password, name, type });
-            userInp.value = '';
-            passInp.value = '';
-            nameInp.value = '';
-            status.textContent = '';
-            renderAccounts();
-        }
-
-        function deleteAccount(index) {
-            const accountToDelete = accounts[index];
-            if (accountToDelete.username === adminUser) {
-                alert('You cannot delete your own account while logged in.');
-                return;
-            }
-            if (!confirm(`Are you sure you want to delete ${accountToDelete.username}?`)) return;
-            accounts.splice(index, 1);
-            renderAccounts();
-        }
-
-        async function saveAccounts() {
-            const btn = document.getElementById('save-accounts-btn');
-            const status = document.getElementById('status-accounts');
-            btn.disabled = true;
-            status.textContent = '儲存中...';
-            status.className = 'status-msg';
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/config/accounts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify(accounts)
-                });
-                if (response.ok) {
-                    status.textContent = '帳號已成功更新';
-                    status.className = 'status-msg success';
-                } else {
-                    const result = await response.json();
-                    status.textContent = result.error || '儲存失敗';
-                    status.className = 'status-msg error';
-                }
-            } catch (err) {
-                status.textContent = '網路錯誤';
-                status.className = 'status-msg error';
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        async function uploadStudentPhoto() {
-            const uid = document.getElementById('photo-upload-uid').value.trim();
-            const fileInput = document.getElementById('photo-upload-file');
-            const status = document.getElementById('status-photo-upload');
-            const btn = document.getElementById('photo-upload-btn');
-
-            if (!uid || !fileInput.files[0]) {
-                status.textContent = 'Please enter UID and select a file';
-                status.className = 'status-msg error';
-                return;
-            }
-
-            const file = fileInput.files[0];
-            if (file.size > 1024 * 1024) { // 1MB limit for Firestore safety
-                status.textContent = 'File too large (Max 1MB)';
-                status.className = 'status-msg error';
-                return;
-            }
-
-            btn.disabled = true;
-            status.textContent = 'Uploading...';
-            status.className = 'status-msg';
-
-            const reader = new FileReader();
-            reader.onload = async () => {
-                const base64 = reader.result.split(',')[1];
-                try {
-                    const response = await fetch(`${BASE_URL}/api/admin/student/photo`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                        body: JSON.stringify({ uid, photo: base64 })
-                    });
-                    if (response.ok) {
-                        status.textContent = 'Photo uploaded successfully!';
-                        status.className = 'status-msg success';
-                        document.getElementById('photo-upload-uid').value = '';
-                        fileInput.value = '';
-                    } else {
-                        const err = await response.json();
-                        status.textContent = err.error || 'Upload failed';
-                        status.className = 'status-msg error';
-                    }
-                } catch (err) {
-                    status.textContent = 'Network error';
-                    status.className = 'status-msg error';
-                } finally {
-                    btn.disabled = false;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
-        let allPhotos = [];
-        async function fetchPhotos() {
-            const grid = document.getElementById('photo-grid');
-            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px;"><div class="spinner"></div><p>Loading Library...</p></div>';
-            
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/photos`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    allPhotos = await response.json();
-                    renderPhotos(allPhotos);
-                } else {
-                    grid.innerHTML = '<p class="error">Failed to load photos</p>';
-                }
-            } catch (err) {
-                grid.innerHTML = '<p class="error">Network error</p>';
-            }
-        }
-
-        function renderPhotos(photos) {
-            const grid = document.getElementById('photo-grid');
-            grid.innerHTML = '';
-            
-            if (photos.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--secondary-text);">No photos found in database.</div>';
-                return;
-            }
-
-            photos.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'photo-card';
-                // Add timestamp to force cache refresh
-                const photoUrl = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
-                card.innerHTML = `
-                    <div class="photo-card-actions">
-                        <button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}', '${p.name}')" title="Delete Photo">✕</button>
-                    </div>
-                    <div class="photo-card-img" onclick="window.open('${photoUrl}', '_blank')">
-                        <img src="${photoUrl}" alt="${p.name}" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'">
-                    </div>
-                    <div class="photo-card-info">
-                        <div class="photo-card-name">${p.name}</div>
-                        <div class="photo-card-uid">${p.uid}</div>
-                        <div style="font-size: 10px; color: #999;">Badge: ${p.badge || '---'}</div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function filterPhotos() {
-            const query = document.getElementById('photo-search').value.toLowerCase();
-            const filtered = allPhotos.filter(p => 
-                p.name.toLowerCase().includes(query) || 
-                p.uid.toLowerCase().includes(query) ||
-                (p.badge && p.badge.toLowerCase().includes(query))
-            );
-            renderPhotos(filtered);
-        }
-
-        async function deletePhoto(uid, name) {
-            if (!confirm(`Are you sure you want to delete the photo for ${name}?`)) return;
-            
-            try {
-                const response = await fetch(`${BASE_URL}/api/admin/student/photo/${uid}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                if (response.ok) {
-                    allPhotos = allPhotos.filter(p => p.uid !== uid);
-                    renderPhotos(allPhotos);
-                } else {
-                    alert('Delete failed');
-                }
-            } catch (err) {
-                alert('Network error');
-            }
-        }
-
-        async function uploadBulkPhotos() {
-            const input = document.getElementById('photo-bulk-input');
-            const status = document.getElementById('bulk-upload-status');
-            const btn = document.getElementById('bulk-upload-btn');
-            
-            if (!input.files || input.files.length === 0) {
-                status.textContent = 'Please select at least one file.';
-                return;
-            }
-
-            btn.disabled = true;
-            status.textContent = `Processing ${input.files.length} files...\n`;
-            
-            let successCount = 0;
-            let skipCount = 0;
-            let failCount = 0;
-
-            for (const file of input.files) {
-                // Get filename without extension
-                const badge = file.name.split('.')[0];
-                
-                // Find student by badge number in the global list
-                const student = allStudentsList.find(s => s.badge === badge);
-                
-                if (!student) {
-                    status.textContent += `⚠️ Skipped: ${file.name} (Badge ${badge} not found in database)\n`;
-                    skipCount++;
-                    continue;
-                }
-
-                try {
-                    // Convert to base64
-                    const base64 = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result.split(',')[1]);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(file);
-                    });
-
-                    // Upload
-                    const response = await fetch(`${BASE_URL}/api/admin/student/photo`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                        body: JSON.stringify({ uid: student.uid, photo: base64 })
-                    });
-
-                    if (response.ok) {
-                        status.textContent += `✅ Uploaded: ${student.name} (${badge})\n`;
-                        successCount++;
-                    } else {
-                        status.textContent += `❌ Failed: ${file.name}\n`;
-                        failCount++;
-                    }
-                } catch (err) {
-                    status.textContent += `❌ Error: ${file.name}\n`;
-                    failCount++;
-                }
-            }
-
-            status.textContent += `\n--- Finished: ${successCount} Success, ${skipCount} Skipped, ${failCount} Failed ---`;
-            btn.disabled = false;
-            input.value = ''; // Clear input
-            fetchPhotos(); // Refresh grid
         }
     </script>
 </body>
