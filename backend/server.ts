@@ -10,10 +10,6 @@ import admin from 'firebase-admin';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Allow photos to be served from a custom path (e.g., a Samba mount)
-const photosPath = process.env.PHOTOS_PATH ? path.resolve(process.env.PHOTOS_PATH) : path.resolve(__dirname, 'Photos');
-console.log(`[System] Serving photos from: ${photosPath}`);
-
 const app = express();
 const PORT = 5001;
 

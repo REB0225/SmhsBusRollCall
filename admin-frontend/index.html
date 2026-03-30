@@ -1763,16 +1763,19 @@
             photos.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'photo-card';
+                // Add timestamp to force cache refresh
+                const photoUrl = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
                 card.innerHTML = `
                     <div class="photo-card-actions">
                         <button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}', '${p.name}')" title="Delete Photo">✕</button>
                     </div>
-                    <div class="photo-card-img" onclick="window.open('${BASE_URL}/api/photo/${p.uid}?token=${authToken}', '_blank')">
-                        <img src="${BASE_URL}/api/photo/${p.uid}?token=${authToken}" alt="${p.name}" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'">
+                    <div class="photo-card-img" onclick="window.open('${photoUrl}', '_blank')">
+                        <img src="${photoUrl}" alt="${p.name}" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'">
                     </div>
                     <div class="photo-card-info">
                         <div class="photo-card-name">${p.name}</div>
                         <div class="photo-card-uid">${p.uid}</div>
+                        <div style="font-size: 10px; color: #999;">Badge: ${p.badge || '---'}</div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -1783,7 +1786,8 @@
             const query = document.getElementById('photo-search').value.toLowerCase();
             const filtered = allPhotos.filter(p => 
                 p.name.toLowerCase().includes(query) || 
-                p.uid.toLowerCase().includes(query)
+                p.uid.toLowerCase().includes(query) ||
+                (p.badge && p.badge.toLowerCase().includes(query))
             );
             renderPhotos(filtered);
         }
