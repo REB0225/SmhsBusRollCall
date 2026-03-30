@@ -6,6 +6,7 @@ import { parse } from 'csv-parse/sync';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
+import { JWT } from 'google-auth-library';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1197,17 +1198,28 @@ async function getDriveAccessToken() {
         return driveTokenCache.token;
     }
 
-    if (!serviceAccount) return null;
+    if (!serviceAccount) {
+        console.error("[Auth] No service account found for GDrive token");
+        return null;
+    }
 
     try {
-        // Use the parsed serviceAccount object
-        const tokenResponse = await admin.credential.cert(serviceAccount).getAccessToken();
+        console.log("[Auth] Requesting scoped GDrive token...");
+        const client = new JWT({
+            email: serviceAccount.client_email,
+            key: serviceAccount.private_key,
+            scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+        });
+
+        const credentials = await client.getAccessToken();
         
+        if (!credentials.token) throw new Error("No token returned");
+
         driveTokenCache = {
-            token: tokenResponse.access_token,
-            expiry: Date.now() + 3600000 // Tokens are usually valid for 1 hour
+            token: credentials.token,
+            expiry: Date.now() + 3600000 // 1 hour
         };
-        return tokenResponse.access_token;
+        return credentials.token;
     } catch (err) {
         console.error("[Auth] Failed to get Drive Access Token:", err);
         return null;
