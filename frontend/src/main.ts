@@ -4,7 +4,8 @@ const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const BATTERY_SERVICE_UUID = 0x180F;
 const BATTERY_LEVEL_UUID = 0x2A19;
-const BASE_URL = 'https://bus-rollcall-api.vercel.app';
+const BASE_URL = 'https://ue86ozvpct9r.share.zrok.io';
+
 interface Student {
   uid: string;
   name: string;
@@ -45,10 +46,10 @@ class App {
   private authToken: string | null = null;
   private currentStudent: Student | null = null;
   private pendingRollCalls: PendingRecord[] = [];
+  private allStudents: Record<string, Student> = {};
   private bleDevice: BluetoothDevice | null = null;
   private isConnected = false;
   private isSyncing = false;
-  private allStudents: Record<string, Student> = {};
   private isMismatchedData = false;
 
   constructor() {
@@ -60,56 +61,42 @@ class App {
   private getCurrentSlot(dateObj: Date = new Date()): string {
     const taipeiTime = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Taipei',
-        hour: 'numeric',
-        minute: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
         hour12: false
     }).format(dateObj);
     
-    const [hours, minutes] = taipeiTime.split(':').map(Number);
-    const currentTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-    if (currentTimeStr >= "07:00" && currentTimeStr < "09:00") return "07:00-09:00";
-    if (currentTimeStr >= "16:00" && currentTimeStr < "18:00") return "16:00-18:00";
-    if (currentTimeStr >= "19:00" && currentTimeStr < "21:00") return "19:00-21:00";
+    // Simplistic check just for mismatch detection
+    if (taipeiTime >= "07:00" && taipeiTime < "09:00") return "07:00-09:00";
+    if (taipeiTime >= "16:00" && taipeiTime < "18:00") return "16:00-18:00";
+    if (taipeiTime >= "19:00" && taipeiTime < "21:00") return "19:00-21:00";
     return "Not in time";
   }
 
-  private isSameSlot(t1: string, t2: string): boolean {
-    const d1 = new Date(t1);
-    const d2 = new Date(t2);
-    const dateMatches = d1.toISOString().split('T')[0] === d2.toISOString().split('T')[0];
-    const slotMatches = this.getCurrentSlot(d1) === this.getCurrentSlot(d2);
-    return dateMatches && slotMatches;
-  }
-
-  private checkBluetoothSupport() {
-    if (!navigator.bluetooth) {
-        const errorEl = document.getElementById('status-message-ready')!;
-        errorEl.textContent = "Web Bluetooth is not supported in this browser or context (requires HTTPS/Localhost).";
-        errorEl.style.display = "block";
-        
-        const connectBtn = document.getElementById('connect-ble-btn') as HTMLButtonElement;
-        if (connectBtn) {
-            connectBtn.disabled = true;
-            connectBtn.style.opacity = "0.5";
-            connectBtn.classList.remove('pulse');
-        }
-    }
+  private isSameSlot(ts1: string, ts2: string): boolean {
+    const d1 = new Date(ts1);
+    const d2 = new Date(ts2);
+    
+    const date1 = d1.toISOString().split('T')[0];
+    const date2 = d2.toISOString().split('T')[0];
+    
+    if (date1 !== date2) return false;
+    return this.getCurrentSlot(d1) === this.getCurrentSlot(d2);
   }
 
   private initEventListeners() {
     // Login
     document.getElementById('login-btn')?.addEventListener('click', () => this.handleLogin());
-    
-    // BLE
+
+    // Scanner
     document.getElementById('connect-ble-btn')?.addEventListener('click', () => this.connectScanner());
     document.getElementById('disconnect-btn')?.addEventListener('click', () => this.disconnectScanner());
-    
-    // Review & Sync
+
+    // Review
     document.getElementById('review-btn')?.addEventListener('click', () => this.openReview());
     document.getElementById('close-review')?.addEventListener('click', () => this.closeReview());
     document.getElementById('sync-now-btn')?.addEventListener('click', () => this.syncRecords());
-    
+
     // Bus Selection
     this.busSelect.addEventListener('change', () => {
         this.updateUIColors();
@@ -147,10 +134,10 @@ class App {
         localStorage.setItem('userToken', data.token);
         this.startMainView();
       } else {
-        errorEl.textContent = data.error || 'Login failed';
+        errorEl.textContent = data.error || '登入失敗';
       }
     } catch (err) {
-      errorEl.textContent = 'Network error';
+      errorEl.textContent = '網路錯誤';
     }
   }
 
@@ -168,6 +155,9 @@ class App {
         headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
       const buses = await res.json();
+      this.busSelect.innerHTML = '<option value="">請選擇車次</option>';
+      this.reviewBusSelect.innerHTML = '<option value="">請選擇車次</option>';
+      
       buses.forEach((bus: any) => {
         const busName = typeof bus === 'string' ? bus : (bus.name || bus.bus);
         if (!busName) return;
@@ -202,7 +192,7 @@ class App {
 
   private async connectScanner() {
     if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
-        alert("Please resolve the stale data from a different time slot before connecting the scanner.");
+        alert("請在連接掃描器前，先處理來自不同時段的舊資料。");
         this.openReview();
         return;
     }
@@ -212,7 +202,7 @@ class App {
         optionalServices: [SERVICE_UUID, BATTERY_SERVICE_UUID]
       });
 
-      this.updateStatus(true, "Connecting...");
+      this.updateStatus(true, "正在連接...");
       const server = await this.bleDevice.gatt?.connect();
       if (!server) return;
 
@@ -240,13 +230,13 @@ class App {
       } catch (e) {}
 
       this.isConnected = true;
-      this.updateStatus(true, "Connected");
+      this.updateStatus(true, "已連接");
       this.readyState.style.display = 'none';
       this.studentCard.style.display = 'block';
 
       this.bleDevice.addEventListener('gattserverdisconnected', () => {
         this.isConnected = false;
-        this.updateStatus(false, "Disconnected");
+        this.updateStatus(false, "已斷開連接");
         this.readyState.style.display = 'flex';
         this.studentCard.style.display = 'none';
         document.body.className = 'gray-bg';
@@ -254,7 +244,7 @@ class App {
 
     } catch (err) {
       console.error(err);
-      this.updateStatus(false, "Failed");
+      this.updateStatus(false, "連接失敗");
     }
   }
 
@@ -271,21 +261,21 @@ class App {
     // 1. Resolve student from local cache ONLY for instant response
     const student = this.allStudents[uid];
     
-    this.currentStudent = student || { uid, name: "Unknown Tag", badge: "---", bus: "Unknown" };
+    this.currentStudent = student || { uid, name: "未知標籤", badge: "---", bus: "未知" };
     
     // 2. Update UI
     this.displayStudent(this.currentStudent);
     this.updateUIColors();
 
     // 3. Auto Record logic
-    this.addPendingRecord(uid, this.currentStudent.name, this.currentStudent.badge || "---", this.currentStudent.bus || "Unknown");
+    this.addPendingRecord(uid, this.currentStudent.name, this.currentStudent.badge || "---", this.currentStudent.bus || "未知");
   }
 
   private displayStudent(s: Student) {
     (document.getElementById('student-name')!).textContent = s.name;
     (document.getElementById('student-badge')!).textContent = s.badge;
     (document.getElementById('student-uid')!).textContent = s.uid;
-    (document.getElementById('student-bus')!).textContent = s.bus || 'No Bus Assigned';
+    (document.getElementById('student-bus')!).textContent = s.bus || '未指派車次';
 
     const photoEl = document.getElementById('student-photo') as HTMLImageElement;
     if (s.badge !== "---") {
@@ -317,22 +307,22 @@ class App {
     if (!s) { document.body.className = 'gray-bg'; return; }
     if (!bus) { 
         document.body.className = 'gray-bg'; 
-        msgEl.textContent = "Please select a bus first";
+        msgEl.textContent = "請先選擇車次";
         msgEl.style.color = "gray";
         return; 
     }
 
-    if (s.name === "Unknown Tag") {
+    if (s.name === "未知標籤") {
         document.body.className = 'red-bg';
-        msgEl.textContent = "Tag not in database";
+        msgEl.textContent = "資料庫中無此標籤";
         msgEl.style.color = "white";
     } else if (s.bus === bus) {
         document.body.className = 'green-bg';
-        msgEl.textContent = "Matches selected bus";
+        msgEl.textContent = "符合所選車次";
         msgEl.style.color = "white";
     } else {
         document.body.className = 'yellow-bg';
-        msgEl.textContent = "Wrong bus selected";
+        msgEl.textContent = "與所選車次不符";
         msgEl.style.color = "black";
     }
   }
@@ -407,7 +397,7 @@ class App {
         warning.style.padding = '10px';
         warning.style.background = '#fff0f0';
         warning.style.borderRadius = '10px';
-        warning.textContent = "⚠️ Stale data detected from a different time slot. Please sync or delete these records before continuing.";
+        warning.textContent = "⚠️ 偵測到不同時段的舊資料。請在繼續之前上傳或刪除這些記錄。";
         this.reviewList.appendChild(warning);
     } else {
         cancelBtn.style.display = 'block';
@@ -415,14 +405,14 @@ class App {
 
     this.pendingRollCalls.forEach((record, index) => {
         let badgeHtml = '';
-        if (record.name === "Unknown Tag") {
-            badgeHtml = '<span class="badge badge-unknown">UNKNOWN</span>';
+        if (record.name === "未知標籤") {
+            badgeHtml = '<span class="badge badge-unknown">未知</span>';
             unknownCount++;
         } else if (record.studentBus === currentBus) {
-            badgeHtml = '<span class="badge badge-ready">READY</span>';
+            badgeHtml = '<span class="badge badge-ready">就緒</span>';
             readyCount++;
         } else {
-            badgeHtml = '<span class="badge badge-wrong">WRONG BUS</span>';
+            badgeHtml = '<span class="badge badge-wrong">不符</span>';
             wrongCount++;
         }
 
@@ -433,14 +423,14 @@ class App {
                 <h4 style="display: flex; align-items: center; gap: 8px; margin: 0;">
                     ${record.name} ${badgeHtml}
                 </h4>
-                <p style="margin: 4px 0;">Badge: ${record.badge} | UID: ${record.uid}</p>
-                <p style="font-size: 11px; color: #666; margin: 0;">Assigned: ${record.studentBus} | Scanned for: ${record.selectedBusAtTimeOfScan}</p>
+                <p style="margin: 4px 0;">學號: ${record.badge} | UID: ${record.uid}</p>
+                <p style="font-size: 11px; color: #666; margin: 0;">原定車次: ${record.studentBus} | 掃描車次: ${record.selectedBusAtTimeOfScan}</p>
                 <div style="font-size: 10px; color: #999; margin-top: 4px; display: flex; gap: 8px;">
                     <span>📅 ${new Date(record.timestamp).toLocaleDateString()}</span>
                     <span>⏰ ${new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
             </div>
-            <button class="text-btn delete-btn" data-index="${index}">Delete</button>
+            <button class="text-btn delete-btn" data-index="${index}">刪除</button>
         `;
         item.querySelector('.delete-btn')?.addEventListener('click', (e: any) => {
             const idx = parseInt(e.target.dataset.index);
@@ -453,10 +443,10 @@ class App {
 
     this.reviewSummary.innerHTML = `
         <div class="summary-pills">
-            <span class="pill">Total: ${this.pendingRollCalls.length}</span>
-            <span class="pill ready">Ready: ${readyCount}</span>
-            <span class="pill wrong">Wrong: ${wrongCount}</span>
-            <span class="pill unknown">Unknown: ${unknownCount}</span>
+            <span class="pill">總計: ${this.pendingRollCalls.length}</span>
+            <span class="pill ready">就緒: ${readyCount}</span>
+            <span class="pill wrong">不符: ${wrongCount}</span>
+            <span class="pill unknown">未知: ${unknownCount}</span>
         </div>
     `;
     this.reviewSheet.style.display = 'flex';
@@ -464,7 +454,7 @@ class App {
 
   private closeReview() {
     if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
-        alert("Please resolve the stale data first.");
+        alert("請先處理舊時段的資料。");
         return;
     }
     this.reviewSheet.style.display = 'none';
@@ -474,16 +464,16 @@ class App {
     if (this.isSyncing || this.pendingRollCalls.length === 0) return;
 
     const currentBus = this.reviewBusSelect.value;
-    const recordsToSync = this.pendingRollCalls.filter(r => r.studentBus === currentBus && r.name !== "Unknown Tag");
+    const recordsToSync = this.pendingRollCalls.filter(r => r.studentBus === currentBus && r.name !== "未知標籤");
     
     if (recordsToSync.length === 0) {
-        alert(`No valid records for ${currentBus} to sync.`);
+        alert(`沒有可同步至 ${currentBus} 的有效記錄。`);
         return;
     }
 
     this.isSyncing = true;
     const btn = document.getElementById('sync-now-btn') as HTMLButtonElement;
-    btn.textContent = "Syncing...";
+    btn.textContent = "同步中...";
     btn.disabled = true;
 
     try {
@@ -501,16 +491,22 @@ class App {
             this.pendingRollCalls = this.pendingRollCalls.filter(r => !recordsToSync.includes(r));
             this.updatePendingUI();
             this.closeReview();
-            alert("Sync complete!");
+            alert("同步完成！");
         } else {
-            alert("Sync failed");
+            alert("同步失敗");
         }
     } catch (e) {
-        alert("Network error");
+        alert("網路錯誤");
     } finally {
         this.isSyncing = false;
-        btn.textContent = "Confirm & Sync to Backend";
+        btn.textContent = "確認並上傳至伺服器";
         btn.disabled = false;
+    }
+  }
+
+  private checkBluetoothSupport() {
+    if (!navigator.bluetooth) {
+        document.getElementById('status-message-ready')!.textContent = "⚠️ 瀏覽器不支援 Web Bluetooth (請使用 Chrome/Edge)";
     }
   }
 }

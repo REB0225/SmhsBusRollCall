@@ -445,101 +445,101 @@
     <div class="container dashboard" id="dashboardSection">
         <div class="user-info">
             <div>
-                <span id="welcomeText" style="font-weight: 600;">Hi, Admin</span>
-                <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">Administrator Control Panel</div>
+                <span id="welcomeText" style="font-weight: 600;">您好，管理員</span>
+                <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">管理後台控制面板</div>
             </div>
-            <a class="logout-link" onclick="logout()">Logout</a>
+            <a class="logout-link" onclick="logout()">登出</a>
         </div>
 <div class="tabs">
-    <div class="tab active" onclick="switchTab('export')">Export Records</div>
-    <div class="tab" onclick="switchTab('temp-riders')">Temporary Riders</div>
-    <div class="tab" onclick="switchTab('photos')">Photo Library</div>
-    <div class="tab" onclick="switchTab('config')">Admin Config</div>
+    <div class="tab active" onclick="switchTab('export')">匯出記錄</div>
+    <div class="tab" onclick="switchTab('temp-riders')">臨時搭乘</div>
+    <div class="tab" onclick="switchTab('photos')">相片庫</div>
+    <div class="tab" onclick="switchTab('config')">系統設定</div>
 </div>
 
 <!-- Export Tab -->
 <div id="exportTab" class="tab-content active">
-    <h1>Export Records</h1>
-    <p class="subtitle">Select date and time slot</p>
+    <h1>匯出點名記錄</h1>
+    <p class="subtitle">選擇日期與時段</p>
     
     <div class="form-group">
-        <label for="datePicker">Date</label>
+        <label for="datePicker">日期</label>
         <input type="date" id="datePicker">
     </div>
     
     <div class="form-group">
-        <label for="slotPicker">Time Slot</label>
+        <label for="slotPicker">時段</label>
         <select id="slotPicker">
-            <option value="07:00-09:00">Morning (07:00-09:00)</option>
-            <option value="16:00-18:00">Afternoon (16:00-18:00)</option>
-            <option value="19:00-21:00">Evening (19:00-21:00)</option>
-            <option value="Not in time">Other (Not in time)</option>
+            <option value="07:00-09:00">早上 (07:00-09:00)</option>
+            <option value="16:00-18:00">下午 (16:00-18:00)</option>
+            <option value="19:00-21:00">晚上 (19:00-21:00)</option>
+            <option value="Not in time">其他 (不在時段內)</option>
         </select>
     </div>
     
-    <button id="downloadBtn" onclick="downloadCSV()">Download CSV</button>
-    <button id="downloadWeekBtn" onclick="downloadWeekCSV()" class="secondary-btn" style="margin-top: 10px; background-color: #5856d6; color: white; border: none;">Download Whole Week (Mon-Fri)</button>
+    <button id="downloadBtn" onclick="downloadCSV()">下載單日 CSV</button>
+    <button id="downloadWeekBtn" onclick="downloadWeekCSV()" class="secondary-btn" style="margin-top: 10px; background-color: #5856d6; color: white; border: none;">下載全週記錄 (一至五)</button>
     <p id="downloadError" class="error"></p>
 </div>
 
 <!-- Temporary Riders Tab -->
 <div id="tempRidersTab" class="tab-content">
     <h1>Temporary Riders</h1>
-    <p class="subtitle">Assign students to a different bus for a specific trip</p>
+    <p class="subtitle">為特定行程指派學生至不同車輛</p>
 
     <div class="admin-cards">
         <div class="config-card">
-            <h3>Add Temporary Assignment</h3>
+            <h3>新增臨時指派</h3>
             <div class="form-group">
-                <label>Date</label>
+                <label>日期</label>
                 <input type="date" id="temp-date" onchange="updateOccupancy()">
             </div>
             <div class="form-group">
-                <label>Time Slot</label>
+                <label>時段</label>
                 <select id="temp-slot" onchange="updateOccupancy()"></select>
             </div>
             <div class="form-group">
-                <label>Target Bus</label>
+                <label>目標車輛</label>
                 <select id="temp-bus" onchange="updateOccupancy()"></select>
             </div>
             <div class="form-group">
-                <label>Student UID (10 digits)</label>
+                <label>學生 UID (10 碼)</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="temp-uid" placeholder="Enter 10-digit UID" oninput="lookupStudent()">
-                    <button onclick="lookupStudent()" class="secondary-btn" style="width: auto; margin: 0;">Lookup</button>
+                    <input type="text" id="temp-uid" placeholder="輸入 10 碼 UID" oninput="lookupStudent()">
+                    <button onclick="lookupStudent()" class="secondary-btn" style="width: auto; margin: 0;">查詢</button>
                 </div>
                 <p id="temp-student-info" style="font-size: 13px; margin-top: 5px; color: var(--secondary-text);"></p>
             </div>
             <div class="form-group">
-                <label>Student Name</label>
-                <input type="text" id="temp-name" placeholder="Enter student name">
+                <label>學生姓名</label>
+                <input type="text" id="temp-name" placeholder="輸入學生姓名">
             </div>
             <div class="form-group">
-                <label>Badge Number (Optional)</label>
-                <input type="text" id="temp-badge" placeholder="Enter badge number">
+                <label>學號/座號 (選填)</label>
+                <input type="text" id="temp-badge" placeholder="輸入學號">
             </div>
 
             <div id="occupancy-info" class="review-summary" style="display: none; margin-bottom: 15px;">
-                <strong>Bus Occupancy:</strong> <span id="occupancy-count">0</span> students assigned
+                <strong>車輛負載:</strong> <span id="occupancy-count">0</span> 位學生已指派
             </div>
 
-            <button id="add-temp-btn" onclick="addTemporaryRider()" class="primary-btn">Add Assignment</button>
+            <button id="add-temp-btn" onclick="addTemporaryRider()" class="primary-btn">新增指派</button>
             <p id="status-temp" class="status-msg"></p>
         </div>
 
         <div class="config-card" style="grid-column: 1 / -1;">
-            <h3>Active Temporary Assignments</h3>
+            <h3>目前臨時指派列表</h3>
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Slot</th>
-                            <th>Bus</th>
-                            <th>Student</th>
-                            <th>Badge</th>
+                            <th>日期</th>
+                            <th>時段</th>
+                            <th>車次</th>
+                            <th>學生</th>
+                            <th>學號</th>
                             <th>UID</th>
-                            <th>Action</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="temp-riders-body">
@@ -554,18 +554,18 @@
 <div id="photosTab" class="tab-content">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; gap: 20px;">
         <div style="flex: 1;">
-            <h1>Photo Library</h1>
-            <p class="subtitle">Manage all student photos stored in Firestore</p>
+            <h1>相片庫</h1>
+            <p class="subtitle">管理存儲於 Firestore 中的學生相片</p>
             <div style="width: 100%; max-width: 400px; margin-top: 10px;">
-                <input type="text" id="photo-search" placeholder="Search by name or UID..." oninput="filterPhotos()" class="table-input" style="width: 100%; padding: 10px 15px !important;">
+                <input type="text" id="photo-search" placeholder="搜尋姓名、UID 或學號..." oninput="filterPhotos()" class="table-input" style="width: 100%; padding: 10px 15px !important;">
             </div>
         </div>
 
         <div class="config-card" style="margin: 0; flex: 1; max-width: 450px; padding: 1.5rem;">
-            <h3 style="margin-top: 0;">Bulk Upload Photos</h3>
-            <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">Filenames must match student **Badge Number** (e.g. 211002.jpg)</p>
+            <h3 style="margin-top: 0;">批量上傳相片</h3>
+            <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">檔名必須符合學生 **學號** (例如: 211002.jpg)</p>
             <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="margin-bottom: 10px;">
-            <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 10px; font-size: 14px;">Upload Multiple Files</button>
+            <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 10px; font-size: 14px;">上傳多個檔案</button>
             <div id="bulk-upload-status" class="status-msg" style="text-align: left; font-size: 12px; white-space: pre-line;"></div>
         </div>
     </div>
@@ -575,28 +575,28 @@
     </div>
 </div>
 <div id="configTab" class="tab-content">
-    <h1>Admin Configuration</h1>
-    <p class="subtitle">Update system data and time slots</p>
+    <h1>系統管理</h1>
+    <p class="subtitle">更新系統資料與時段配置</p>
 
     <div class="admin-cards">
         <!-- Account Management Card -->
         <div class="config-card" style="grid-column: 1 / -1;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="margin: 0;">User Account Management</h3>
-                <button onclick="saveAccounts()" id="save-accounts-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">Save All Changes</button>
+                <h3 style="margin: 0;">帳號管理</h3>
+                <button onclick="saveAccounts()" id="save-accounts-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">儲存變更</button>
             </div>
             
             <div style="background: #f5f5f7; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
-                <h4 style="margin: 0 0 1rem 0; font-size: 13px;">Add New Account</h4>
+                <h4 style="margin: 0 0 1rem 0; font-size: 13px;">新增帳號</h4>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                    <input type="text" id="new-account-username" placeholder="Username" class="table-input">
-                    <input type="password" id="new-account-password" placeholder="Password" class="table-input">
-                    <input type="text" id="new-account-name" placeholder="Display Name" class="table-input">
+                    <input type="text" id="new-account-username" placeholder="使用者名稱" class="table-input">
+                    <input type="password" id="new-account-password" placeholder="密碼" class="table-input">
+                    <input type="text" id="new-account-name" placeholder="顯示名稱" class="table-input">
                     <select id="new-account-type" class="table-input">
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
+                        <option value="user">一般使用者</option>
+                        <option value="admin">管理員</option>
                     </select>
-                    <button onclick="addAccount()" class="secondary-btn" style="margin: 0; height: 38px;">Add</button>
+                    <button onclick="addAccount()" class="secondary-btn" style="margin: 0; height: 38px;">新增</button>
                 </div>
                 <p id="status-accounts" class="status-msg" style="margin-top: 10px;"></p>
             </div>
@@ -653,13 +653,13 @@
                         <table id="slots-table">
                             <thead>
                                 <tr>
-                                    <th>Day</th>
-                                    <th>Start (HH:mm)</th>
-                                    <th>End (HH:mm)</th>
-                                    <th>Student List</th>
-                                    <th>Label</th>
-                                    <th>Type</th>
-                                    <th style="width: 50px;">Actions</th>
+                                    <th>日期</th>
+                                    <th>開始 (HH:mm)</th>
+                                    <th>結束 (HH:mm)</th>
+                                    <th>對應名單</th>
+                                    <th>名稱</th>
+                                    <th>類型</th>
+                                    <th style="width: 50px;">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="slots-body">
@@ -669,36 +669,36 @@
                                 <tr style="background: #fbfbfd; border-top: 2px solid #d2d2d7;">
                                     <td>
                                         <select id="new-slot-day" class="table-input">
-                                            <option value="">Everyday</option>
-                                            <option value="group:1,2,3,4">Mon-Thu</option>
-                                            <option value="group:5,6,0">Fri-Sun</option>
-                                            <option value="1">Mon</option>
-                                            <option value="2">Tue</option>
-                                            <option value="3">Wed</option>
-                                            <option value="4">Thu</option>
-                                            <option value="5">Fri</option>
-                                            <option value="6">Sat</option>
-                                            <option value="0">Sun</option>
+                                            <option value="">每天</option>
+                                            <option value="group:1,2,3,4">週一至週四</option>
+                                            <option value="group:5,6,0">週五至週日</option>
+                                            <option value="1">週一</option>
+                                            <option value="2">週二</option>
+                                            <option value="3">週三</option>
+                                            <option value="4">週四</option>
+                                            <option value="5">週五</option>
+                                            <option value="6">週六</option>
+                                            <option value="0">週日</option>
                                         </select>
                                     </td>
                                     <td><input type="text" id="new-slot-start" placeholder="07:00" class="table-input"></td>
                                     <td><input type="text" id="new-slot-end" placeholder="09:00" class="table-input"></td>
                                     <td>
                                         <select id="new-slot-csv" class="table-input">
-                                            <option value="arrival">Arrival</option>
-                                            <option value="full_departure">Full Departure</option>
-                                            <option value="night_class_afternoon">Night Afternoon</option>
-                                            <option value="night_class_night">Night Night</option>
+                                            <option value="arrival">早上名單</option>
+                                            <option value="full_departure">下午名單</option>
+                                            <option value="night_class_afternoon">夜間下午名單</option>
+                                            <option value="night_class_night">夜間晚上名單</option>
                                         </select>
                                     </td>
-                                    <td><input type="text" id="new-slot-label" placeholder="Morning" class="table-input"></td>
+                                    <td><input type="text" id="new-slot-label" placeholder="顯示名稱" class="table-input"></td>
                                     <td>
                                         <select id="new-slot-type" class="table-input">
-                                            <option value="permanent">Permanent</option>
-                                            <option value="temp">Temporary</option>
+                                            <option value="permanent">永久</option>
+                                            <option value="temp">臨時</option>
                                         </select>
                                     </td>
-                                    <td><button onclick="addSlot()" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px;">Add</button></td>
+                                    <td><button onclick="addSlot()" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px;">新增</button></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -708,23 +708,23 @@
 
                 <!-- Students Card -->
                 <div class="config-card">
-                    <h3>Student Lists</h3>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">Upload specific CSV files for different slots.</p>
+                    <h3>學生名單管理</h3>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">上傳 CSV 檔案以更新特定時段的學生名單。</p>
                     
                     <div class="form-group" style="margin-bottom: 1rem;">
-                        <label style="font-size: 12px;">Target List</label>
+                        <label style="font-size: 12px;">目標名單</label>
                         <select id="student-list-type" onchange="resetStudentPreview()">
-                            <option value="arrival">Arrival (Main List)</option>
-                            <option value="full_departure">Full Departure (Friday 16-18)</option>
-                            <option value="night_class_afternoon">Night Class Afternoon (Mon-Thu 16-18)</option>
-                            <option value="night_class_night">Night Class Night (Mon-Thu 19-21)</option>
+                            <option value="arrival">早上名單 (主要名單)</option>
+                            <option value="full_departure">下午名單 (週五 16-18)</option>
+                            <option value="night_class_afternoon">夜間下午名單 (週一至四 16-18)</option>
+                            <option value="night_class_night">夜間晚上名單 (週一至四 19-21)</option>
                         </select>
                     </div>
 
                     <input type="file" id="file-students" accept=".csv">
                     <div class="btn-group">
-                        <button class="secondary-btn" onclick="previewCSV('students')">Preview</button>
-                        <button id="upload-students" onclick="uploadConfig('students')" disabled>Upload</button>
+                        <button class="secondary-btn" onclick="previewCSV('students')">預覽</button>
+                        <button id="upload-students" onclick="uploadConfig('students')" disabled>上傳並覆蓋</button>
                     </div>
                     <p id="status-students" class="status-msg"></p>
                     <div id="preview-students" class="preview-container" style="display:none"></div>
@@ -732,22 +732,27 @@
 
                 <!-- Buses Card -->
                 <div class="config-card">
-                    <h3>Buses</h3>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">Update available buses list for different slots.</p>
+                    <h3>車次管理</h3>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">更新不同時段的可用車次列表。</p>
                     
                     <div class="form-group" style="margin-bottom: 1rem;">
-                        <label style="font-size: 12px;">Target List</label>
+                        <label style="font-size: 12px;">目標列表</label>
                         <select id="bus-list-type" onchange="resetBusPreview()">
-                            <option value="arrival">Arrival (Main List)</option>
-                            <option value="full_departure">Full Departure</option>
-                            <option value="night_class_afternoon">Night Afternoon</option>
-                            <option value="night_class_night">Night Night</option>
+                            <option value="arrival">早上名單 (主要列表)</option>
+                            <option value="full_departure">下午列表</option>
+                            <option value="night_class_afternoon">夜間下午列表</option>
+                            <option value="night_class_night">夜間晚上列表</option>
                         </select>
                     </div>
 
                     <input type="file" id="file-buses" accept=".csv">
                     <div class="btn-group">
-                        <button class="secondary-btn" onclick="previewCSV('buses')">Preview</button>
+                        <button class="secondary-btn" onclick="previewCSV('buses')">預覽</button>
+                        <button id="upload-buses" onclick="uploadConfig('buses')" disabled>上傳</button>
+                    </div>
+                    <p id="status-buses" class="status-msg"></p>
+                    <div id="preview-buses" class="preview-container" style="display:none"></div>
+                </div>
                         <button id="upload-buses" onclick="uploadConfig('buses')" disabled>Upload</button>
                     </div>
                     <p id="status-buses" class="status-msg"></p>
@@ -756,20 +761,20 @@
 
                 <!-- Photo Management Card -->
                 <div class="config-card">
-                    <h3>Student Photo Manager</h3>
-                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">Upload a photo directly to Firestore for a student.</p>
+                    <h3>單筆相片管理</h3>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">直接為特定學生上傳相片至資料庫。</p>
                     
                     <div class="form-group">
-                        <label>Student UID</label>
-                        <input type="text" id="photo-upload-uid" placeholder="Enter student UID" class="table-input">
+                        <label>學生 UID</label>
+                        <input type="text" id="photo-upload-uid" placeholder="輸入學生 UID" class="table-input">
                     </div>
                     
                     <div class="form-group">
-                        <label>Select Photo (JPG only, max 500KB recommended)</label>
+                        <label>選擇相片 (僅限 JPG, 建議 500KB 以下)</label>
                         <input type="file" id="photo-upload-file" accept=".jpg,.jpeg">
                     </div>
 
-                    <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="background-color: var(--primary); color: white; border: none; width: 100%;">Upload to Firestore</button>
+                    <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="background-color: var(--primary); color: white; border: none; width: 100%;">上傳至資料庫</button>
                     <p id="status-photo-upload" class="status-msg"></p>
                 </div>
             </div>
@@ -798,7 +803,7 @@
             const url = document.getElementById('apiUrlInput').value.trim() || 
                        (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://bus-rollcall-api.vercel.app');
             const status = document.getElementById('testStatus');
-            status.textContent = 'Testing...';
+            status.textContent = '測試中...';
             status.className = 'status-msg';
 
             try {
@@ -807,14 +812,14 @@
                 const response = await fetch(`${url}/api/buses`, { signal: controller.signal });
                 clearTimeout(id);
                 if (response.status === 401 || response.ok) {
-                    status.textContent = 'Connection successful!';
+                    status.textContent = '連接成功！';
                     status.className = 'status-msg success';
                 } else {
-                    status.textContent = `Server responded with status: ${response.status}`;
+                    status.textContent = `伺服器回應錯誤: ${response.status}`;
                     status.className = 'status-msg error';
                 }
             } catch (err) {
-                status.textContent = 'Connection failed. Check URL and CORS.';
+                status.textContent = '連接失敗，請檢查 URL 與 CORS 設定。';
                 status.className = 'status-msg error';
             }
         }
@@ -1179,14 +1184,14 @@
         }
 
         function resetToDefaults() {
-            if (!confirm('This will replace current mappings with the standard defaults. Continue?')) return;
+            if (!confirm('這將會以標準預設值取代目前的時段配置。是否繼續？')) return;
             slotConfigs = [
-                { start: "07:00", end: "09:00", csvType: "arrival", label: "Morning" },
-                { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "Friday Afternoon" },
-                { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "Mon-Thu Afternoon" },
-                { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "Mon-Thu Night" }
+                { start: "07:00", end: "09:00", csvType: "arrival", label: "早上" },
+                { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "週五下午" },
+                { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "週一至四下午" },
+                { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "週一至四晚上" }
             ];
-            defaultSlot = { csvType: "arrival", label: "Not in time" };
+            defaultSlot = { csvType: "arrival", label: "不在時段內" };
             document.getElementById('default-slot-csv').value = defaultSlot.csvType;
             document.getElementById('default-slot-label').value = defaultSlot.label;
             renderSlots();
@@ -1194,14 +1199,14 @@
 
         function renderSlots() {
             const body = document.getElementById('slots-body');
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
             body.innerHTML = '';
             slotConfigs.forEach((slot, index) => {
-                let dayText = 'Everyday';
+                let dayText = '每天';
                 if (slot.day !== undefined) dayText = dayNames[slot.day];
                 else if (slot.days !== undefined) {
-                    if (JSON.stringify(slot.days) === '[1,2,3,4]') dayText = 'Mon-Thu';
-                    else if (JSON.stringify(slot.days) === '[5,6,0]') dayText = 'Fri-Sun';
+                    if (JSON.stringify(slot.days) === '[1,2,3,4]') dayText = '週一至四';
+                    else if (JSON.stringify(slot.days) === '[5,6,0]') dayText = '週五至日';
                     else dayText = slot.days.map(d => dayNames[d]).join(', ');
                 }
                 const tr = document.createElement('tr');
@@ -1211,8 +1216,8 @@
                     <td>${slot.end}</td>
                     <td>${slot.csvType}</td>
                     <td>${slot.label}</td>
-                    <td><span class="badge ${slot.isTemp ? 'badge-admin' : 'badge-user'}">${slot.isTemp ? 'Temp' : 'Perm'}</span></td>
-                    <td><button class="delete-btn" onclick="deleteSlot(${index})">Delete</button></td>
+                    <td><span class="badge ${slot.isTemp ? 'badge-admin' : 'badge-user'}">${slot.isTemp ? '臨時' : '永久'}</span></td>
+                    <td><button class="delete-btn" onclick="deleteSlot(${index})">刪除</button></td>
                 `;
                 body.appendChild(tr);
             });
@@ -1226,7 +1231,7 @@
             const label = document.getElementById('new-slot-label').value;
             const type = document.getElementById('new-slot-type').value;
             if (!start || !end || !label) {
-                alert('Start, End, and Label are required');
+                alert('開始時間、結束時間與名稱皆為必填');
                 return;
             }
             const newSlot = { start, end, csvType, label, isTemp: type === 'temp' };
@@ -1245,7 +1250,7 @@
                 }
                 if (daysOverlap) {
                     if (newSlot.start < s.end && s.start < newSlot.end) {
-                        alert(`Overlap detected with existing slot: ${s.label}. Please adjust times.`);
+                        alert(`偵測到與現有時段重疊: ${s.label}。請調整時間。`);
                         return;
                     }
                 }
@@ -1266,7 +1271,7 @@
             const status = document.getElementById('status-slots');
             const btn = document.getElementById('save-slots-btn');
             btn.disabled = true;
-            status.textContent = 'Saving...';
+            status.textContent = '儲存中...';
             status.className = 'status-msg';
             try {
                 const response = await fetch(`${BASE_URL}/api/admin/config/slots`, {
@@ -1275,15 +1280,15 @@
                     body: JSON.stringify({ slots: slotConfigs, default: defaultSlot })
                 });
                 if (response.ok) {
-                    status.textContent = 'Slots saved successfully';
+                    status.textContent = '時段配置已成功儲存';
                     status.className = 'status-msg success';
                 } else {
                     const err = await response.json();
-                    status.textContent = err.error || 'Failed to save slots';
+                    status.textContent = err.error || '儲存失敗';
                     status.className = 'status-msg error';
                 }
             } catch (err) {
-                status.textContent = 'Network error';
+                status.textContent = '網路錯誤';
                 status.className = 'status-msg error';
             } finally {
                 btn.disabled = false;
@@ -1564,11 +1569,11 @@
                     renderAccounts();
                 } else {
                     const errText = await response.text();
-                    status.textContent = `Failed to fetch accounts (${response.status}): ${errText.slice(0, 50)}`;
+                    status.textContent = `取得帳號失敗 (${response.status})`;
                     status.className = 'status-msg error';
                 }
             } catch (err) {
-                status.textContent = `Network error: ${err.message}`;
+                status.textContent = `網路錯誤: ${err.message}`;
                 status.className = 'status-msg error';
             }
         }
@@ -1584,17 +1589,17 @@
                     <td>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="color: var(--secondary-text);">••••••••</span>
-                            <button class="text-btn" style="font-size: 11px;" onclick="resetPassword(${index})">Reset</button>
+                            <button class="text-btn" style="font-size: 11px;" onclick="resetPassword(${index})">重設</button>
                         </div>
                     </td>
                     <td><input type="text" value="${acc.name}" onchange="updateAccount(${index}, 'name', this.value)" class="table-input"></td>
                     <td>
                         <select onchange="updateAccount(${index}, 'type', this.value); this.className='table-input badge ' + (this.value === 'admin' ? 'badge-admin' : 'badge-user')" class="table-input badge ${type === 'admin' ? 'badge-admin' : 'badge-user'}" style="padding: 4px 6px !important; border: none; font-size: 11px;">
-                            <option value="user" ${type === 'user' ? 'selected' : ''}>User</option>
-                            <option value="admin" ${type === 'admin' ? 'selected' : ''}>Admin</option>
+                            <option value="user" ${type === 'user' ? 'selected' : ''}>一般使用者</option>
+                            <option value="admin" ${type === 'admin' ? 'selected' : ''}>管理員</option>
                         </select>
                     </td>
-                    <td><button class="delete-btn" onclick="deleteAccount(${index})">Delete</button></td>
+                    <td><button class="delete-btn" onclick="deleteAccount(${index})">刪除</button></td>
                 `;
                 body.appendChild(tr);
             });
@@ -1655,7 +1660,7 @@
             const btn = document.getElementById('save-accounts-btn');
             const status = document.getElementById('status-accounts');
             btn.disabled = true;
-            status.textContent = 'Saving changes...';
+            status.textContent = '儲存中...';
             status.className = 'status-msg';
             try {
                 const response = await fetch(`${BASE_URL}/api/admin/config/accounts`, {
@@ -1664,15 +1669,15 @@
                     body: JSON.stringify(accounts)
                 });
                 if (response.ok) {
-                    status.textContent = 'Accounts updated successfully';
+                    status.textContent = '帳號已成功更新';
                     status.className = 'status-msg success';
                 } else {
                     const result = await response.json();
-                    status.textContent = result.error || 'Save failed';
+                    status.textContent = result.error || '儲存失敗';
                     status.className = 'status-msg error';
                 }
             } catch (err) {
-                status.textContent = 'Network error';
+                status.textContent = '網路錯誤';
                 status.className = 'status-msg error';
             } finally {
                 btn.disabled = false;

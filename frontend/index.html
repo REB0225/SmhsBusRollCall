@@ -10,17 +10,17 @@
         <!-- Login View -->
         <section id="login-view" class="view">
             <div class="card login-card">
-                <h1>Admin Login</h1>
-                <p class="subtitle">Access roll call scanner</p>
+                <h1>管理員登入</h1>
+                <p class="subtitle">進入點名掃描系統</p>
                 <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="username" placeholder="Enter username">
+                    <label>使用者名稱</label>
+                    <input type="text" id="username" placeholder="請輸入使用者名稱">
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" placeholder="Enter password">
+                    <label>密碼</label>
+                    <input type="password" id="password" placeholder="請輸入密碼">
                 </div>
-                <button id="login-btn" class="primary-btn">Login</button>
+                <button id="login-btn" class="primary-btn">登入</button>
                 <p id="login-error" class="error-text"></p>
             </div>
         </section>
@@ -32,7 +32,7 @@
                     <button id="disconnect-btn" class="icon-btn">✕</button>
                     <div class="connection-status">
                         <div id="status-dot" class="dot disconnected"></div>
-                        <span id="status-text">Disconnected</span>
+                        <span id="status-text">未連接</span>
                     </div>
                     <div id="battery-info" class="battery-info" style="display: none;">
                         <span id="battery-icon">🔋</span>
@@ -41,9 +41,9 @@
                 </div>
                 
                 <div class="bus-selector-container">
-                    <label>Target Bus:</label>
+                    <label>目標車次:</label>
                     <select id="bus-select">
-                        <option value="">Select a Bus</option>
+                        <option value="">請選擇車次</option>
                     </select>
                 </div>
             </header>
@@ -52,22 +52,22 @@
                 <!-- Ready State -->
                 <div id="ready-state" class="empty-state">
                     <div class="rfid-icon">📡</div>
-                    <h2>Ready to scan</h2>
-                    <p>Place a tag near the scanner</p>
-                    <button id="connect-ble-btn" class="primary-btn pulse">Connect Scanner</button>
+                    <h2>準備掃描</h2>
+                    <p>請將卡片靠近掃描器</p>
+                    <button id="connect-ble-btn" class="primary-btn pulse">連接掃描器</button>
                     <div id="status-message-ready" class="status-message" style="margin-top: 20px; color: red;"></div>
                 </div>
 
                 <!-- Student Card -->
                 <div id="student-card" class="student-card" style="display: none;">
                     <div class="photo-container">
-                        <img id="student-photo" src="" alt="Student">
+                        <img id="student-photo" src="" alt="學生相片">
                         <div id="photo-loading" class="spinner" style="display: none;"></div>
                     </div>
                     <div class="student-details">
                         <h2 id="student-name">--</h2>
                         <div class="detail-row">
-                            <span>💳 Badge:</span>
+                            <span>💳 學號:</span>
                             <strong id="student-badge">--</strong>
                         </div>
                         <div class="detail-row">
@@ -84,7 +84,7 @@
             <!-- Bottom Action -->
             <footer id="sync-footer" style="display: none;">
                 <button id="review-btn" class="sync-btn">
-                    <span>📋 Review & Sync</span>
+                    <span>📋 預覽與同步</span>
                     <span id="pending-count" class="badge-count">0</span>
                 </button>
             </footer>
@@ -94,11 +94,11 @@
         <div id="review-sheet" class="modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button id="close-review" class="text-btn">Cancel</button>
-                    <h3>Review Roll Call</h3>
+                    <button id="close-review" class="text-btn">取消</button>
+                    <h3>點名記錄預覽</h3>
                     <div class="review-bus-selector">
                         <select id="review-bus-select">
-                            <option value="">Select a Bus</option>
+                            <option value="">請選擇車次</option>
                         </select>
                     </div>
                 </div>
@@ -110,7 +110,7 @@
                 </div>
                 <div class="modal-footer">
                     <button id="sync-now-btn" class="primary-btn success">
-                        Confirm & Sync to Backend
+                        確認並上傳至伺服器
                     </button>
                 </div>
             </div>
@@ -121,7 +121,7 @@
     <div id="loading-overlay" class="loading-overlay" style="display: none;">
         <div class="loading-content">
             <div class="spinner"></div>
-            <p>Fetching Student Data...</p>
+            <p>正在取得學生資料...</p>
         </div>
     </div>
 
