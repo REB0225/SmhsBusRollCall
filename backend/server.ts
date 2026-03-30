@@ -1175,6 +1175,35 @@ app.post('/api/admin/config/accounts', authorize, async (req: Request, res: Resp
     }
 });
 
+// --- Google Drive Service Account Auth ---
+let driveTokenCache: { token: string, expiry: number } | null = null;
+
+async function getDriveAccessToken() {
+    // Return cached token if valid (with 5 min buffer)
+    if (driveTokenCache && driveTokenCache.expiry > Date.now() + 300000) {
+        return driveTokenCache.token;
+    }
+
+    try {
+        // We reuse the Firebase Admin SDK to get a token for Google Drive scopes
+        // This requires the Service Account to have "Google Drive" API enabled in Cloud Console
+        const tokenResponse = await admin.credential.cert(SERVICE_ACCOUNT_PATH).getAccessToken();
+        
+        // Note: The default Firebase token might not have Drive scopes.
+        // If it fails, you might need to use google-auth-library for explicit scopes.
+        // But usually, the default service account has broad permissions.
+        
+        driveTokenCache = {
+            token: tokenResponse.access_token,
+            expiry: tokenResponse.expirationTime
+        };
+        return tokenResponse.access_token;
+    } catch (err) {
+        console.error("[Auth] Failed to get Drive Access Token:", err);
+        return null;
+    }
+}
+
 app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
     const uid = req.params.uid;
     const student = await findStudentData(uid);
@@ -1185,43 +1214,43 @@ app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
     }
 
     const gdriveFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    const gdriveApiKey = process.env.GOOGLE_API_KEY;
+    const accessToken = await getDriveAccessToken();
 
-    if (!gdriveFolderId || !gdriveApiKey) {
-        console.error("[GDrive] Missing Google Drive configuration");
+    if (!gdriveFolderId || !accessToken) {
+        console.error("[GDrive] Missing configuration or auth token");
         return res.status(500).json({ error: "Server photo configuration error" });
     }
 
     const filename = `${badge}.jpg`;
 
     try {
-        console.log(`[GDrive] Searching for ${filename}...`);
+        console.log(`[GDrive] Searching for ${filename} (Private Access)...`);
         
-        // 1. Search for the file ID by name inside the specific folder
         const query = encodeURIComponent(`name='${filename}' and '${gdriveFolderId}' in parents and trashed=false`);
-        const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)&key=${gdriveApiKey}`;
+        const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`;
         
-        const searchRes = await fetch(searchUrl);
+        const searchRes = await fetch(searchUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
         const searchData: any = await searchRes.json();
 
         if (searchData.files && searchData.files.length > 0) {
             const fileId = searchData.files[0].id;
             
-            // 2. Download the actual image content
-            const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${gdriveApiKey}`;
-            const downloadRes = await fetch(downloadUrl);
+            const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+            const downloadRes = await fetch(downloadUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
             
             if (downloadRes.ok) {
                 const arrayBuffer = await downloadRes.arrayBuffer();
                 res.setHeader('Content-Type', 'image/jpeg');
-                res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+                res.setHeader('Cache-Control', 'public, max-age=3600');
                 return res.send(Buffer.from(arrayBuffer));
             }
         }
         
-        console.log(`[GDrive] Photo not found: ${filename}`);
         res.status(404).json({ error: "Photo not found in Drive" });
-
     } catch (err) {
         console.error(`[GDrive] API Error:`, err);
         res.status(500).json({ error: "Error communicating with Google Drive" });
