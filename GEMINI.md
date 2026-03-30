@@ -5,38 +5,47 @@ A multi-platform system for scanning RFID cards to perform bus roll calls. The s
 ## Project Overview
 
 - **Hardware (ESP32-C3 SuperMini):** Scans RC522 RFID tags, provides buzzer feedback, and broadcasts data over BLE.
-- **Backend (Express/TypeScript):** Connects to **Firestore** for real-time data storage with a local CSV/JSON fallback.
-- **iOS App (SwiftUI):** Native app with local recording, manual review, and batch sync capabilities.
-- **User Dashboard (Vite/TS):** Web-based scanner interface matching the iOS experience, utilizing Web Bluetooth (GATT).
-- **Admin Panel (Vite/HTML):** management interface for exporting roll call records filtered by date and time slots.
+- **Backend (Express/TypeScript):** 100% cloud-native server running on **Vercel** or **Raspberry Pi**, using **Firestore** for all storage.
+- **iOS App (SwiftUI):** Native app with local recording, manual review, instant local-only lookups, and batch sync.
+- **User Dashboard (Vite/TS):** Web-based scanner interface utilizing Web Bluetooth (GATT) with instant local-only lookups.
+- **Admin Panel (Vite/HTML):** management interface for exports, temporary rider assignments, and a native Firestore Photo Library.
 
 ## Architecture
 
-- **Database:** Uses **Google Cloud Firestore** as the primary database. Automatically falls back to local files (`students.csv`, `accounts.json`) if `serviceAccountKey.json` is missing.
+- **Database:** Uses **Google Cloud Firestore** as the exclusive database. Documents use a `uid_type` format for student records to handle multiple trip lists.
+- **Photos:** Student photos are stored as **Base64 strings** directly in Firestore student documents.
 - **Roll Call Slots:** Scans are automatically categorized by Taipei time:
     - `07:00-09:00` (Morning)
     - `16:00-18:00` (Afternoon)
     - `19:00-21:00` (Evening)
     - `Not in time` (Fallback)
-- **Sync Workflow:** Both clients (iOS/Web) capture local timestamps during scans and perform a **Batch Sync** after user review to ensure data integrity.
+- **Sync Workflow:** Clients perform instant lookups against a locally cached student list for sub-100ms response times. Scans are queued locally and synced in batches to the backend.
 
-## Building and Running
+## Key Features
 
-### Backend (`/backend`)
-- **Setup:** Requires `serviceAccountKey.json` from Firebase Console.
-- **Migration:** Run `npm run migrate` to push local CSV data to Firestore.
-- **Command:** `npm start` (Runs on port 5001).
+### 1. Temporary Riders
+Admin can assign any student (even those not in the master database) to a specific bus for a specific date and time slot.
+- Requires 10-digit UID.
+- Automatic occupancy tracking with overflow warnings.
+- Assignments are automatically hidden 1 day after the trip.
 
-### Web Dashboards (`/frontend` & `/admin-frontend`)
-- **Environment:** Powered by **Vite**.
-- **Configuration:** `vite.config.js` is set to `0.0.0.0` with `allowedHosts: true` to support **zrok** and public proxies.
-- **Commands:** `npm run dev` (Ports 5173 and 5174).
-- **Public Sharing:** `zrok share public http://localhost:5174`
+### 2. Photo Library
+Native grid-style gallery in the Admin Panel for managing student photos.
+- Bulk Upload: Match filenames to badge numbers (e.g., `211002.jpg`) for mass updates.
+- Real-time Search: Filter by name, UID, or badge number.
+- Secure Serving: Token-based access for browser `<img>` tags.
 
-### iOS App (`/iPhoneApp/BusRollCall`)
-- **Requirements:** Physical device (Bluetooth) and Xcode.
-- **Permissions:** `NSBluetoothAlwaysUsageDescription` added to `Info.plist`.
-- **Logic:** Uses `BLEManager` for reactive Bluetooth state and batch recording.
+## Deployment
+
+### Vercel (Cloud)
+The project is optimized for Vercel Serverless Functions.
+- **Backend:** Uses `FIREBASE_SERVICE_ACCOUNT` environment variable for credentials.
+- **Frontends:** Automatically handles SPA routing via `vercel.json`.
+
+### Raspberry Pi 5 (Local)
+Managed via **PM2** and **Caddy**.
+- **Commands:** `npm run pm2` starts the service in the background.
+- **HTTPS:** Caddy handles automatic SSL and reverse proxying to ports 5001 and 5174.
 
 ## Development Conventions
 
@@ -44,6 +53,9 @@ A multi-platform system for scanning RFID cards to perform bus roll calls. The s
     - Device Name: `ESP32-C3-Scanner`
     - RFID Service: `4fafc201-1fb5-459e-8fcc-c5c9c331914b`
     - RFID Characteristic: `beb5483e-36e1-4688-b7f5-ea07361b26a8`
+- **Identity Resolution:**
+    - Document ID format: `${uid}_${listType}` (e.g., `0012345678_arrival`).
+    - Fallback: Checks `uid_arrival` -> `uid` (legacy) -> Global UID Search.
 - **Data Format:** 
     - Batch Sync: `POST /api/rollcall/batch` with an array of `{uid, timestamp}` objects.
 - **UI Colors:**

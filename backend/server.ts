@@ -603,6 +603,34 @@ app.delete('/api/admin/student/photo/:uid', authorize, async (req: Request, res:
     } catch (err) { res.status(500).json({ error: "Failed to delete" }); }
 });
 
+app.get('/api/admin/accounts', authorize, async (req: Request, res: Response) => {
+    if (firestore) {
+        try {
+            const snapshot = await firestore!.collection('accounts').get();
+            const accounts: any[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                accounts.push({ username: doc.id, ...data });
+            });
+            res.json(accounts);
+        } catch (err) {
+            res.status(500).json({ error: "Failed to fetch accounts" });
+        }
+    } else {
+        const accountsPath = path.resolve(__dirname, 'accounts.json');
+        if (fs.existsSync(accountsPath)) {
+            try {
+                const accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
+                res.json(accounts);
+            } catch (err) {
+                res.status(500).json({ error: "Failed to read local accounts" });
+            }
+        } else {
+            res.json([]);
+        }
+    }
+});
+
 // --- Admin Management Endpoints ---
 
 app.get('/api/admin/temporary-riders', authorize, async (req: Request, res: Response) => {
