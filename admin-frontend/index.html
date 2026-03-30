@@ -641,7 +641,7 @@
 
     <script>
         const BASE_URL = localStorage.getItem('apiUrl') || 
-                        (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://ue86ozvpct9r.share.zrok.io');
+                        (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://bus-rollcall-api.vercel.app');
 
         function openSettings() {
             document.getElementById('settingsModal').style.display = 'flex';
@@ -659,7 +659,7 @@
 
         async function testConnection() {
             const url = document.getElementById('apiUrlInput').value.trim() || 
-                       (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://6kz90ad4q3qs.share.zrok.io');
+                       (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://bus-rollcall-api.vercel.app');
             const status = document.getElementById('testStatus');
             status.textContent = 'Testing...';
             status.className = 'status-msg';
