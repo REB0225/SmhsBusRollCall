@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bus Roll Call</title>
+</head>
+<body class="gray-bg">
+    <div id="app">
+        <!-- Login View -->
+        <section id="login-view" class="view">
+            <div class="card login-card">
+                <h1>Admin Login</h1>
+                <p class="subtitle">Access roll call scanner</p>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Enter password">
+                </div>
+                <button id="login-btn" class="primary-btn">Login</button>
+                <p id="login-error" class="error-text"></p>
+            </div>
+        </section>
+
+        <!-- Main View (Scanner) -->
+        <section id="main-view" class="view" style="display: none;">
+            <header class="glass-header">
+                <div class="header-top">
+                    <button id="disconnect-btn" class="icon-btn">✕</button>
+                    <div class="connection-status">
+                        <div id="status-dot" class="dot disconnected"></div>
+                        <span id="status-text">Disconnected</span>
+                    </div>
+                    <div id="battery-info" class="battery-info" style="display: none;">
+                        <span id="battery-icon">🔋</span>
+                        <span id="battery-level">--</span>%
+                    </div>
+                </div>
+                
+                <div class="bus-selector-container">
+                    <label>Target Bus:</label>
+                    <select id="bus-select">
+                        <option value="">Select a Bus</option>
+                    </select>
+                </div>
+            </header>
+
+            <main class="content">
+                <!-- Ready State -->
+                <div id="ready-state" class="empty-state">
+                    <div class="rfid-icon">📡</div>
+                    <h2>Ready to scan</h2>
+                    <p>Place a tag near the scanner</p>
+                    <button id="connect-ble-btn" class="primary-btn pulse">Connect Scanner</button>
+                    <div id="status-message-ready" class="status-message" style="margin-top: 20px; color: red;"></div>
+                </div>
+
+                <!-- Student Card -->
+                <div id="student-card" class="student-card" style="display: none;">
+                    <div class="photo-container">
+                        <img id="student-photo" src="" alt="Student">
+                        <div id="photo-loading" class="spinner" style="display: none;"></div>
+                    </div>
+                    <div class="student-details">
+                        <h2 id="student-name">--</h2>
+                        <div class="detail-row">
+                            <span>💳 Badge:</span>
+                            <strong id="student-badge">--</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span># UID:</span>
+                            <strong id="student-uid">--</strong>
+                        </div>
+                        <div id="student-bus" class="bus-badge">--</div>
+                    </div>
+                    
+                    <div id="status-message" class="status-message"></div>
+                </div>
+            </main>
+
+            <!-- Bottom Action -->
+            <footer id="sync-footer" style="display: none;">
+                <button id="review-btn" class="sync-btn">
+                    <span>📋 Review & Sync</span>
+                    <span id="pending-count" class="badge-count">0</span>
+                </button>
+            </footer>
+        </section>
+
+        <!-- Review Sheet (Modal) -->
+        <div id="review-sheet" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button id="close-review" class="text-btn">Cancel</button>
+                    <h3>Review Roll Call</h3>
+                    <div class="review-bus-selector">
+                        <select id="review-bus-select">
+                            <option value="">Select a Bus</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="review-summary" class="review-summary">
+                    <!-- Summary text will be injected here -->
+                </div>
+                <div id="review-list" class="review-list">
+                    <!-- Pending scans list -->
+                </div>
+                <div class="modal-footer">
+                    <button id="sync-now-btn" class="primary-btn success">
+                        Confirm & Sync to Backend
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

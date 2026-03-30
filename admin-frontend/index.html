@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Roll Call - Admin Panel</title>
+    <style>
+        :root {
+            --primary: #0071e3;
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --secondary-text: #86868b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .container.dashboard {
+            max-width: 800px;
+            margin: 2rem;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: var(--secondary-text);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background-color: #d2d2d7;
+            cursor: not-allowed;
+        }
+
+        .secondary-btn {
+            background-color: #e8e8ed;
+            color: var(--text);
+        }
+
+        .error {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        #dashboardSection {
+            display: none;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f5f5f7;
+        }
+
+        .logout-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Tabs and Cards */
+        .tabs {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #d2d2d7;
+        }
+
+        .tab {
+            padding: 10px 5px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--secondary-text);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .admin-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .config-card {
+            background: #fbfbfd;
+            border: 1px solid #d2d2d7;
+            border-radius: 15px;
+            padding: 1.5rem;
+        }
+
+        .config-card h3 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .btn-group button {
+            margin-top: 0;
+        }
+
+        .preview-container {
+            margin-top: 1rem;
+            overflow-x: auto;
+            max-height: 250px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f5f5f7;
+        }
+
+        th {
+            background: #f5f5f7;
+            position: sticky;
+            top: 0;
+            font-weight: 600;
+        }
+
+        .status-msg {
+            margin-top: 10px;
+            font-size: 13px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .status-msg.success { color: #34c759; }
+        .status-msg.error { color: #ff3b30; }
+
+        .delete-btn {
+            color: #ff3b30 !important;
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: auto !important;
+            font-weight: 500 !important;
+            cursor: pointer;
+            font-size: 13px !important;
+        }
+        .delete-btn:hover {
+            text-decoration: underline;
+            opacity: 1 !important;
+        }
+
+        .table-input {
+            padding: 6px 8px !important;
+            font-size: 13px !important;
+            border-radius: 6px !important;
+            margin: 0 !important;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-admin {
+            background-color: #e1f5fe;
+            color: #0288d1;
+        }
+
+        .badge-user {
+            background-color: #f5f5f7;
+            color: #86868b;
+        }
+
+        /* Settings Modal */
+        #settingsModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .settings-icon {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .settings-icon:hover {
+            background: #f5f5f7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="loginSection">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="flex: 1;">
+                <h1>Admin Login</h1>
+                <p class="subtitle">Access management dashboard</p>
+            </div>
+            <div class="settings-icon" onclick="openSettings()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter username">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        
+        <button id="loginBtn" onclick="login()">Login</button>
+        <p id="loginError" class="error"></p>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; font-size: 20px;">Connection Settings</h2>
+            <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 1.5rem;">Configure the backend API URL for this session.</p>
+            
+            <div class="form-group">
+                <label style="font-size: 12px;">API Base URL</label>
+                <input type="text" id="apiUrlInput" placeholder="http://localhost:5001">
+            </div>
+            
+            <button onclick="saveSettings()">Save & Close</button>
+            <button class="secondary-btn" onclick="testConnection()">Test Connection</button>
+            <p id="testStatus" class="status-msg"></p>
+        </div>
+    </div>
+
+    <div class="container dashboard" id="dashboardSection">
+        <div class="user-info">
+            <div>
+                <span id="welcomeText" style="font-weight: 600;">Hi, Admin</span>
+                <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">Administrator Control Panel</div>
+            </div>
+            <a class="logout-link" onclick="logout()">Logout</a>
+        </div>
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('export')">Export Records</div>
+    <div class="tab" onclick="switchTab('temp-riders')">Temporary Riders</div>
+    <div class="tab" onclick="switchTab('config')">Admin Config</div>
+</div>
+
+<!-- Export Tab -->
+<div id="exportTab" class="tab-content active">
+    <h1>Export Records</h1>
+    <p class="subtitle">Select date and time slot</p>
+    
+    <div class="form-group">
+        <label for="datePicker">Date</label>
+        <input type="date" id="datePicker">
+    </div>
+    
+    <div class="form-group">
+        <label for="slotPicker">Time Slot</label>
+        <select id="slotPicker">
+            <option value="07:00-09:00">Morning (07:00-09:00)</option>
+            <option value="16:00-18:00">Afternoon (16:00-18:00)</option>
+            <option value="19:00-21:00">Evening (19:00-21:00)</option>
+            <option value="Not in time">Other (Not in time)</option>
+        </select>
+    </div>
+    
+    <button id="downloadBtn" onclick="downloadCSV()">Download CSV</button>
+    <button id="downloadWeekBtn" onclick="downloadWeekCSV()" class="secondary-btn" style="margin-top: 10px; background-color: #5856d6; color: white; border: none;">Download Whole Week (Mon-Fri)</button>
+    <p id="downloadError" class="error"></p>
+</div>
+
+<!-- Temporary Riders Tab -->
+<div id="tempRidersTab" class="tab-content">
+    <h1>Temporary Riders</h1>
+    <p class="subtitle">Assign students to a different bus for a specific trip</p>
+
+    <div class="admin-cards">
+        <div class="config-card">
+            <h3>Add Temporary Assignment</h3>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="temp-date" onchange="updateOccupancy()">
+            </div>
+            <div class="form-group">
+                <label>Time Slot</label>
+                <select id="temp-slot" onchange="updateOccupancy()"></select>
+            </div>
+            <div class="form-group">
+                <label>Target Bus</label>
+                <select id="temp-bus" onchange="updateOccupancy()"></select>
+            </div>
+            <div class="form-group">
+                <label>Student UID (10 digits)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="temp-uid" placeholder="Enter 10-digit UID" oninput="lookupStudent()">
+                    <button onclick="lookupStudent()" class="secondary-btn" style="width: auto; margin: 0;">Lookup</button>
+                </div>
+                <p id="temp-student-info" style="font-size: 13px; margin-top: 5px; color: var(--secondary-text);"></p>
+            </div>
+            <div class="form-group">
+                <label>Student Name</label>
+                <input type="text" id="temp-name" placeholder="Enter student name">
+            </div>
+            <div class="form-group">
+                <label>Badge Number (Optional)</label>
+                <input type="text" id="temp-badge" placeholder="Enter badge number">
+            </div>
+
+            <div id="occupancy-info" class="review-summary" style="display: none; margin-bottom: 15px;">
+                <strong>Bus Occupancy:</strong> <span id="occupancy-count">0</span> students assigned
+            </div>
+
+            <button id="add-temp-btn" onclick="addTemporaryRider()" class="primary-btn">Add Assignment</button>
+            <p id="status-temp" class="status-msg"></p>
+        </div>
+
+        <div class="config-card" style="grid-column: 1 / -1;">
+            <h3>Active Temporary Assignments</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Slot</th>
+                            <th>Bus</th>
+                            <th>Student</th>
+                            <th>Badge</th>
+                            <th>UID</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="temp-riders-body">
+                        <!-- Temporary riders list -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="configTab" class="tab-content">
+    <h1>Admin Configuration</h1>
+    <p class="subtitle">Update system data and time slots</p>
+
+    <div class="admin-cards">
+        <!-- Account Management Card -->
+        <div class="config-card" style="grid-column: 1 / -1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0;">User Account Management</h3>
+                <button onclick="saveAccounts()" id="save-accounts-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">Save All Changes</button>
+            </div>
+            
+            <div style="background: #f5f5f7; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
+                <h4 style="margin: 0 0 1rem 0; font-size: 13px;">Add New Account</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <input type="text" id="new-account-username" placeholder="Username" class="table-input">
+                    <input type="password" id="new-account-password" placeholder="Password" class="table-input">
+                    <input type="text" id="new-account-name" placeholder="Display Name" class="table-input">
+                    <select id="new-account-type" class="table-input">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button onclick="addAccount()" class="secondary-btn" style="margin: 0; height: 38px;">Add</button>
+                </div>
+                <p id="status-accounts" class="status-msg" style="margin-top: 10px;"></p>
+            </div>
+
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table id="accounts-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Display Name</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accounts-body">
+                        <!-- Account rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Time Slot Mapping Card -->
+        <div class="config-card" style="grid-column: 1 / -1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0;">Time Slot Mapping</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="resetToDefaults()" class="secondary-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">Reset to Defaults</button>
+                            <button onclick="saveSlots()" id="save-slots-btn" style="width: auto; padding: 8px 16px; margin: 0; font-size: 14px;">Save Changes</button>
+                        </div>
+                    </div>
+                    <div style="background: #f5f5f7; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 13px;">Default Slot (Outside mappings)</h4>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 11px; margin-bottom: 2px;">Default List</label>
+                                <select id="default-slot-csv" class="table-input" onchange="updateDefaultSlot()">
+                                    <option value="arrival">Arrival</option>
+                                    <option value="full_departure">Full Departure</option>
+                                    <option value="night_class_afternoon">Night Afternoon</option>
+                                    <option value="night_class_night">Night Night</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 11px; margin-bottom: 2px;">Default Label</label>
+                                <input type="text" id="default-slot-label" class="table-input" onchange="updateDefaultSlot()">
+                            </div>
+                        </div>
+                    </div>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">
+                        Define which student and bus lists are used for each time period. Temporary slots take priority.
+                    </p>
+                    <div class="preview-container" style="display: block; max-height: 400px; margin-top: 0; background: white;">
+                        <table id="slots-table">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Start (HH:mm)</th>
+                                    <th>End (HH:mm)</th>
+                                    <th>Student List</th>
+                                    <th>Label</th>
+                                    <th>Type</th>
+                                    <th style="width: 50px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="slots-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: #fbfbfd; border-top: 2px solid #d2d2d7;">
+                                    <td>
+                                        <select id="new-slot-day" class="table-input">
+                                            <option value="">Everyday</option>
+                                            <option value="group:1,2,3,4">Mon-Thu</option>
+                                            <option value="group:5,6,0">Fri-Sun</option>
+                                            <option value="1">Mon</option>
+                                            <option value="2">Tue</option>
+                                            <option value="3">Wed</option>
+                                            <option value="4">Thu</option>
+                                            <option value="5">Fri</option>
+                                            <option value="6">Sat</option>
+                                            <option value="0">Sun</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" id="new-slot-start" placeholder="07:00" class="table-input"></td>
+                                    <td><input type="text" id="new-slot-end" placeholder="09:00" class="table-input"></td>
+                                    <td>
+                                        <select id="new-slot-csv" class="table-input">
+                                            <option value="arrival">Arrival</option>
+                                            <option value="full_departure">Full Departure</option>
+                                            <option value="night_class_afternoon">Night Afternoon</option>
+                                            <option value="night_class_night">Night Night</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" id="new-slot-label" placeholder="Morning" class="table-input"></td>
+                                    <td>
+                                        <select id="new-slot-type" class="table-input">
+                                            <option value="permanent">Permanent</option>
+                                            <option value="temp">Temporary</option>
+                                        </select>
+                                    </td>
+                                    <td><button onclick="addSlot()" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px;">Add</button></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <p id="status-slots" class="status-msg"></p>
+                </div>
+
+                <!-- Students Card -->
+                <div class="config-card">
+                    <h3>Student Lists</h3>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">Upload specific CSV files for different slots.</p>
+                    
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="font-size: 12px;">Target List</label>
+                        <select id="student-list-type" onchange="resetStudentPreview()">
+                            <option value="arrival">Arrival (Main List)</option>
+                            <option value="full_departure">Full Departure (Friday 16-18)</option>
+                            <option value="night_class_afternoon">Night Class Afternoon (Mon-Thu 16-18)</option>
+                            <option value="night_class_night">Night Class Night (Mon-Thu 19-21)</option>
+                        </select>
+                    </div>
+
+                    <input type="file" id="file-students" accept=".csv">
+                    <div class="btn-group">
+                        <button class="secondary-btn" onclick="previewCSV('students')">Preview</button>
+                        <button id="upload-students" onclick="uploadConfig('students')" disabled>Upload</button>
+                    </div>
+                    <p id="status-students" class="status-msg"></p>
+                    <div id="preview-students" class="preview-container" style="display:none"></div>
+                </div>
+
+                <!-- Buses Card -->
+                <div class="config-card">
+                    <h3>Buses</h3>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 0.5rem;">Update available buses list for different slots.</p>
+                    
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="font-size: 12px;">Target List</label>
+                        <select id="bus-list-type" onchange="resetBusPreview()">
+                            <option value="arrival">Arrival (Main List)</option>
+                            <option value="full_departure">Full Departure</option>
+                            <option value="night_class_afternoon">Night Afternoon</option>
+                            <option value="night_class_night">Night Night</option>
+                        </select>
+                    </div>
+
+                    <input type="file" id="file-buses" accept=".csv">
+                    <div class="btn-group">
+                        <button class="secondary-btn" onclick="previewCSV('buses')">Preview</button>
+                        <button id="upload-buses" onclick="uploadConfig('buses')" disabled>Upload</button>
+                    </div>
+                    <p id="status-buses" class="status-msg"></p>
+                    <div id="preview-buses" class="preview-container" style="display:none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = localStorage.getItem('apiUrl') || 
+                        (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://ue86ozvpct9r.share.zrok.io');
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            document.getElementById('apiUrlInput').value = BASE_URL;
+        }
+
+        function saveSettings() {
+            const url = document.getElementById('apiUrlInput').value.trim();
+            if (url) {
+                localStorage.setItem('apiUrl', url);
+                location.reload();
+            }
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        async function testConnection() {
+            const url = document.getElementById('apiUrlInput').value.trim() || 
+                       (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://6kz90ad4q3qs.share.zrok.io');
+            const status = document.getElementById('testStatus');
+            status.textContent = 'Testing...';
+            status.className = 'status-msg';
+
+            try {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 5000);
+                const response = await fetch(`${url}/api/buses`, { signal: controller.signal });
+                clearTimeout(id);
+                if (response.status === 401 || response.ok) {
+                    status.textContent = 'Connection successful!';
+                    status.className = 'status-msg success';
+                } else {
+                    status.textContent = `Server responded with status: ${response.status}`;
+                    status.className = 'status-msg error';
+                }
+            } catch (err) {
+                status.textContent = 'Connection failed. Check URL and CORS.';
+                status.className = 'status-msg error';
+            }
+        }
+
+        let authToken = localStorage.getItem('adminToken') || '';
+        let adminName = localStorage.getItem('adminName') || 'Admin';
+        let adminUser = localStorage.getItem('adminUser') || '';
+        let parsedData = { students: null, buses: null, accounts: null };
+
+        document.getElementById('datePicker').valueAsDate = new Date();
+
+        if (authToken) {
+            showDashboard();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (tabName === 'export') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('exportTab').classList.add('active');
+            } else if (tabName === 'temp-riders') {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('tempRidersTab').classList.add('active');
+                fetchTempRiders();
+                populateSelectors();
+            } else {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('configTab').classList.add('active');
+                fetchAccounts();
+            }
+        }
+
+        function populateSelectors() {
+            const slotSelect = document.getElementById('temp-slot');
+            const busSelect = document.getElementById('temp-bus');
+            const mainSlotSelect = document.getElementById('slotPicker');
+            const dateInput = document.getElementById('temp-date');
+            
+            if (!dateInput.value) dateInput.valueAsDate = new Date();
+
+            // Sync slots from the main picker or predefined ones
+            slotSelect.innerHTML = '';
+            const slots = [
+                "07:00-09:00",
+                "16:00-18:00",
+                "19:00-21:00",
+                "Not in time"
+            ];
+            slots.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                slotSelect.appendChild(opt);
+            });
+
+            // Fetch buses to populate the bus select
+            fetchBusesForTemp();
+        }
+
+        async function fetchBusesForTemp() {
+            const busSelect = document.getElementById('temp-bus');
+            try {
+                // Fetch for Morning as a baseline
+                const response = await fetch(`${BASE_URL}/api/buses`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const buses = await response.json();
+                busSelect.innerHTML = '<option value="">Select Bus</option>';
+                buses.forEach(b => {
+                    const name = typeof b === 'string' ? b : b.name;
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    busSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Error fetching buses:', err);
+            }
+        }
+
+        let studentCache = null;
+        async function lookupStudent() {
+            const uid = document.getElementById('temp-uid').value.trim();
+            const info = document.getElementById('temp-student-info');
+            const nameInput = document.getElementById('temp-name');
+            const badgeInput = document.getElementById('temp-badge');
+            if (!uid) { info.textContent = ''; return; }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/student/${uid}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    const student = await response.json();
+                    studentCache = student;
+                    info.textContent = `✅ Found: ${student.name} | Bus: ${student.bus || 'None'}`;
+                    info.style.color = 'green';
+                    nameInput.value = student.name;
+                    badgeInput.value = student.badge || '';
+                } else {
+                    studentCache = null;
+                    info.textContent = 'ℹ️ New Student (Not in database)';
+                    info.style.color = 'var(--secondary-text)';
+                }
+            } catch (err) {
+                info.textContent = 'Network error';
+            }
+        }
+
+        async function updateOccupancy() {
+            const date = document.getElementById('temp-date').value;
+            const slot = document.getElementById('temp-slot').value;
+            const bus = document.getElementById('temp-bus').value;
+            const infoBox = document.getElementById('occupancy-info');
+            const countSpan = document.getElementById('occupancy-count');
+
+            if (!date || !slot || !bus) {
+                infoBox.style.display = 'none';
+                return;
+            }
+
+            try {
+                const url = `${BASE_URL}/api/admin/bus-occupancy?date=${date}&timeSlot=${encodeURIComponent(slot)}&bus=${encodeURIComponent(bus)}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const count = data.count;
+                    const limit = data.overflowLimit || 40;
+                    
+                    countSpan.textContent = `${count} / ${limit}`;
+                    infoBox.style.display = 'block';
+                    
+                    // Capacity warning
+                    if (count >= limit) {
+                        countSpan.style.color = 'red';
+                        countSpan.innerHTML += " (OVERFLOW!)";
+                    } else if (count >= (limit - 5)) {
+                        countSpan.style.color = 'orange';
+                        countSpan.innerHTML += " (Near limit)";
+                    } else {
+                        countSpan.style.color = 'green';
+                    }
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function addTemporaryRider() {
+            const date = document.getElementById('temp-date').value;
+            const slot = document.getElementById('temp-slot').value;
+            const bus = document.getElementById('temp-bus').value;
+            const uid = document.getElementById('temp-uid').value.trim();
+            const name = document.getElementById('temp-name').value.trim();
+            const badge = document.getElementById('temp-badge').value.trim();
+            const status = document.getElementById('status-temp');
+            const btn = document.getElementById('add-temp-btn');
+
+            if (!date || !slot || !bus || !uid || !name) {
+                status.textContent = 'Please fill all fields';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            if (!/^\d{10}$/.test(uid)) {
+                status.textContent = 'UID must be exactly 10 digits';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            btn.disabled = true;
+            status.textContent = 'Adding...';
+            status.className = 'status-msg';
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/temporary-riders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ 
+                        date, 
+                        timeSlot: slot, 
+                        bus, 
+                        uid, 
+                        name: name,
+                        badge: badge || '---'
+                    })
+                });
+                if (response.ok) {
+                    status.textContent = 'Assignment added successfully';
+                    status.className = 'status-msg success';
+                    document.getElementById('temp-uid').value = '';
+                    document.getElementById('temp-name').value = '';
+                    document.getElementById('temp-badge').value = '';
+                    document.getElementById('temp-student-info').textContent = '';
+                    studentCache = null;
+                    fetchTempRiders();
+                    updateOccupancy();
+                } else {
+                    const err = await response.json();
+                    status.textContent = err.error || 'Failed to add';
+                    status.className = 'status-msg error';
+                }
+            } catch (err) {
+                status.textContent = 'Network error';
+                status.className = 'status-msg error';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function fetchTempRiders() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/temporary-riders`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    const riders = await response.json();
+                    renderTempRiders(riders);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function renderTempRiders(riders) {
+            const body = document.getElementById('temp-riders-body');
+            body.innerHTML = '';
+            riders.sort((a,b) => b.date.localeCompare(a.date)).forEach(rider => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${rider.date}</td>
+                    <td>${rider.timeSlot}</td>
+                    <td><span class="bus-badge" style="font-size: 11px;">${rider.bus}</span></td>
+                    <td>${rider.name}</td>
+                    <td>${rider.badge || '---'}</td>
+                    <td style="font-family: monospace;">${rider.uid}</td>
+                    <td><button class="delete-btn" onclick="deleteTempRider('${rider.id}')">Delete</button></td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        async function deleteTempRider(id) {
+            if (!confirm('Are you sure you want to remove this temporary assignment?')) return;
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/temporary-riders/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    fetchTempRiders();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function login() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const error = document.getElementById('loginError');
+            if (!user || !pass) {
+                error.textContent = 'Please enter both fields';
+                return;
+            }
+            btn.disabled = true;
+            error.textContent = '';
+            try {
+                const response = await fetch(`${BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    if (data.user.type !== 'admin') {
+                        error.textContent = 'Access denied: Admins only';
+                        return;
+                    }
+                    authToken = data.token;
+                    adminName = data.user.name;
+                    adminUser = data.user.username;
+                    localStorage.setItem('adminToken', authToken);
+                    localStorage.setItem('adminName', adminName);
+                    localStorage.setItem('adminUser', adminUser);
+                    showDashboard();
+                } else {
+                    error.textContent = data.error || 'Login failed';
+                }
+            } catch (err) {
+                error.textContent = 'Network error';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('welcomeText').textContent = `Hi, ${adminName}`;
+            document.querySelector('.container').classList.add('dashboard');
+            fetchAccounts();
+            fetchSlots();
+        }
+
+        let slotConfigs = [];
+        let defaultSlot = { csvType: 'arrival', label: 'Not in time' };
+
+        async function fetchSlots() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/config/slots`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                slotConfigs = data.slots || [];
+                defaultSlot = data.default || { csvType: 'arrival', label: 'Not in time' };
+                document.getElementById('default-slot-csv').value = defaultSlot.csvType;
+                document.getElementById('default-slot-label').value = defaultSlot.label;
+                renderSlots();
+            } catch (err) {
+                console.error('Error fetching slots:', err);
+            }
+        }
+
+        function updateDefaultSlot() {
+            defaultSlot.csvType = document.getElementById('default-slot-csv').value;
+            defaultSlot.label = document.getElementById('default-slot-label').value;
+        }
+
+        function resetToDefaults() {
+            if (!confirm('This will replace current mappings with the standard defaults. Continue?')) return;
+            slotConfigs = [
+                { start: "07:00", end: "09:00", csvType: "arrival", label: "Morning" },
+                { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "Friday Afternoon" },
+                { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "Mon-Thu Afternoon" },
+                { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "Mon-Thu Night" }
+            ];
+            defaultSlot = { csvType: "arrival", label: "Not in time" };
+            document.getElementById('default-slot-csv').value = defaultSlot.csvType;
+            document.getElementById('default-slot-label').value = defaultSlot.label;
+            renderSlots();
+        }
+
+        function renderSlots() {
+            const body = document.getElementById('slots-body');
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            body.innerHTML = '';
+            slotConfigs.forEach((slot, index) => {
+                let dayText = 'Everyday';
+                if (slot.day !== undefined) dayText = dayNames[slot.day];
+                else if (slot.days !== undefined) {
+                    if (JSON.stringify(slot.days) === '[1,2,3,4]') dayText = 'Mon-Thu';
+                    else if (JSON.stringify(slot.days) === '[5,6,0]') dayText = 'Fri-Sun';
+                    else dayText = slot.days.map(d => dayNames[d]).join(', ');
+                }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${dayText}</td>
+                    <td>${slot.start}</td>
+                    <td>${slot.end}</td>
+                    <td>${slot.csvType}</td>
+                    <td>${slot.label}</td>
+                    <td><span class="badge ${slot.isTemp ? 'badge-admin' : 'badge-user'}">${slot.isTemp ? 'Temp' : 'Perm'}</span></td>
+                    <td><button class="delete-btn" onclick="deleteSlot(${index})">Delete</button></td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function addSlot() {
+            const dayVal = document.getElementById('new-slot-day').value;
+            const start = document.getElementById('new-slot-start').value;
+            const end = document.getElementById('new-slot-end').value;
+            const csvType = document.getElementById('new-slot-csv').value;
+            const label = document.getElementById('new-slot-label').value;
+            const type = document.getElementById('new-slot-type').value;
+            if (!start || !end || !label) {
+                alert('Start, End, and Label are required');
+                return;
+            }
+            const newSlot = { start, end, csvType, label, isTemp: type === 'temp' };
+            if (dayVal.startsWith('group:')) {
+                newSlot.days = dayVal.split(':')[1].split(',').map(Number);
+            } else if (dayVal !== "") {
+                newSlot.day = parseInt(dayVal);
+            }
+            for (const s of slotConfigs) {
+                let daysOverlap = false;
+                if (newSlot.day === undefined && newSlot.days === undefined && s.day === undefined && s.days === undefined) daysOverlap = true;
+                else {
+                    const d1 = newSlot.day !== undefined ? [newSlot.day] : (newSlot.days || [0,1,2,3,4,5,6]);
+                    const d2 = s.day !== undefined ? [s.day] : (s.days || [0,1,2,3,4,5,6]);
+                    daysOverlap = d1.some(d => d2.includes(d));
+                }
+                if (daysOverlap) {
+                    if (newSlot.start < s.end && s.start < newSlot.end) {
+                        alert(`Overlap detected with existing slot: ${s.label}. Please adjust times.`);
+                        return;
+                    }
+                }
+            }
+            slotConfigs.push(newSlot);
+            renderSlots();
+            document.getElementById('new-slot-start').value = '';
+            document.getElementById('new-slot-end').value = '';
+            document.getElementById('new-slot-label').value = '';
+        }
+
+        function deleteSlot(index) {
+            slotConfigs.splice(index, 1);
+            renderSlots();
+        }
+
+        async function saveSlots() {
+            const status = document.getElementById('status-slots');
+            const btn = document.getElementById('save-slots-btn');
+            btn.disabled = true;
+            status.textContent = 'Saving...';
+            status.className = 'status-msg';
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/config/slots`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ slots: slotConfigs, default: defaultSlot })
+                });
+                if (response.ok) {
+                    status.textContent = 'Slots saved successfully';
+                    status.className = 'status-msg success';
+                } else {
+                    const err = await response.json();
+                    status.textContent = err.error || 'Failed to save slots';
+                    status.className = 'status-msg error';
+                }
+            } catch (err) {
+                status.textContent = 'Network error';
+                status.className = 'status-msg error';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function resetStudentPreview() {
+            const preview = document.getElementById('preview-students');
+            const status = document.getElementById('status-students');
+            const uploadBtn = document.getElementById('upload-students');
+            const fileInput = document.getElementById('file-students');
+            preview.style.display = 'none';
+            status.textContent = '';
+            uploadBtn.disabled = true;
+            fileInput.value = '';
+            parsedData.students = null;
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        async function downloadCSV() {
+            const date = document.getElementById('datePicker').value;
+            const slot = document.getElementById('slotPicker').value;
+            const btn = document.getElementById('downloadBtn');
+            const error = document.getElementById('downloadError');
+            if (!date) {
+                error.textContent = 'Please select a date';
+                return;
+            }
+            btn.disabled = true;
+            error.textContent = '';
+            try {
+                const url = `${BASE_URL}/api/admin/rollcall-csv?date=${date}&timeSlot=${encodeURIComponent(slot)}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `roll-call-${date}-${slot.replace(':','-')}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    a.remove();
+                } else {
+                    const err = await response.json();
+                    error.textContent = err.error || 'No records found for this selection';
+                }
+            } catch (err) {
+                error.textContent = 'Network error';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function downloadWeekCSV() {
+            const dateInput = document.getElementById('datePicker').value;
+            const btn = document.getElementById('downloadWeekBtn');
+            const error = document.getElementById('downloadError');
+            if (!dateInput) {
+                error.textContent = 'Please select a date within the target week';
+                return;
+            }
+
+            // Calculate Mon-Fri of the selected week
+            const selectedDate = new Date(dateInput);
+            const day = selectedDate.getDay(); // 0 is Sun, 1 is Mon, ... 6 is Sat
+            const diffToMon = (day === 0 ? -6 : 1) - day;
+            const mon = new Date(selectedDate);
+            mon.setDate(selectedDate.getDate() + diffToMon);
+            
+            const fri = new Date(mon);
+            fri.setDate(mon.getDate() + 4);
+
+            const startDate = mon.toISOString().split('T')[0];
+            const endDate = fri.toISOString().split('T')[0];
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Generating Files...';
+            error.textContent = '';
+            
+            try {
+                const url = `${BASE_URL}/api/admin/rollcall-week?startDate=${startDate}&endDate=${endDate}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const files = data.files;
+                    const filenames = Object.keys(files);
+                    
+                    if (filenames.length === 0) {
+                        error.textContent = 'No records found for this week';
+                    } else {
+                        // Download each file with a slight delay to avoid browser blocking multiple downloads
+                        for (let i = 0; i < filenames.length; i++) {
+                            const filename = filenames[i];
+                            const content = files[filename];
+                            
+                            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+                            const downloadUrl = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = downloadUrl;
+                            a.download = filename;
+                            document.body.appendChild(a);
+                            
+                            // Delay to prevent browser download batch limits
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                            
+                            a.click();
+                            window.URL.revokeObjectURL(downloadUrl);
+                            a.remove();
+                        }
+                        btn.textContent = 'Downloads Started!';
+                        setTimeout(() => { btn.textContent = originalText; }, 3000);
+                    }
+                } else {
+                    const err = await response.json();
+                    error.textContent = err.error || 'Failed to generate weekly records';
+                }
+            } catch (err) {
+                console.error(err);
+                error.textContent = 'Network error while fetching weekly records';
+            } finally {
+                btn.disabled = false;
+                if (btn.textContent === 'Generating Files...') {
+                    btn.textContent = originalText;
+                }
+            }
+        }
+
+        function parseCSV(text) {
+            if (text.startsWith('\ufeff')) {
+                text = text.slice(1);
+            }
+            const lines = text.split(/\r?\n/);
+            if (lines.length === 0) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
+            const results = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+                const obj = {};
+                headers.forEach((header, index) => {
+                    if (header) {
+                        obj[header] = values[index] || '';
+                    }
+                });
+                results.push(obj);
+            }
+            return results;
+        }
+
+        async function previewCSV(type) {
+            const fileInput = document.getElementById(`file-${type}`);
+            const status = document.getElementById(`status-${type}`);
+            const preview = document.getElementById(`preview-${type}`);
+            const uploadBtn = document.getElementById(`upload-${type}`);
+            if (!fileInput.files || fileInput.files.length === 0) {
+                status.textContent = 'Please select a file first';
+                status.className = 'status-msg error';
+                return;
+            }
+            try {
+                const file = fileInput.files[0];
+                const text = await file.text();
+                const data = parseCSV(text);
+                if (data.length === 0) {
+                    status.textContent = 'CSV file is empty or invalid';
+                    status.className = 'status-msg error';
+                    return;
+                }
+                const headers = Object.keys(data[0]);
+                let isValid = false;
+                if (type === 'students') isValid = headers.includes('uid') && headers.includes('name') && headers.includes('badge');
+                if (type === 'buses') isValid = headers.includes('bus') && headers.includes('overflow');
+                if (type === 'accounts') isValid = headers.includes('username') && headers.includes('password');
+                if (!isValid) {
+                    status.textContent = `Invalid CSV structure for ${type}. Check headers.`;
+                    status.className = 'status-msg error';
+                    return;
+                }
+                parsedData[type] = data;
+                status.textContent = `Found ${data.length} records`;
+                status.className = 'status-msg';
+                let html = '<table><thead><tr>';
+                headers.forEach(h => html += `<th>${h}</th>`);
+                html += '</tr></thead><tbody>';
+                data.slice(0, 10).forEach(row => {
+                    html += '<tr>';
+                    headers.forEach(h => html += `<td>${row[h]}</td>`);
+                    html += '</tr>';
+                });
+                if (data.length > 10) html += `<tr><td colspan="${headers.length}" style="text-align:center; color: var(--secondary-text)">... and ${data.length - 10} more rows</td></tr>`;
+                html += '</tbody></table>';
+                preview.innerHTML = html;
+                preview.style.display = 'block';
+                uploadBtn.disabled = false;
+            } catch (err) {
+                status.textContent = 'Error reading file';
+                status.className = 'status-msg error';
+            }
+        }
+
+        function resetBusPreview() {
+            const preview = document.getElementById('preview-buses');
+            const status = document.getElementById('status-buses');
+            const uploadBtn = document.getElementById('upload-buses');
+            const fileInput = document.getElementById('file-buses');
+            preview.style.display = 'none';
+            status.textContent = '';
+            uploadBtn.disabled = true;
+            fileInput.value = '';
+            parsedData.buses = null;
+        }
+
+        async function uploadConfig(type) {
+            const status = document.getElementById(`status-${type}`);
+            const btn = document.getElementById(`upload-${type}`);
+            let data = parsedData[type];
+            if (!data) return;
+            let payload = data;
+            if (type === 'students') {
+                const csvType = document.getElementById('student-list-type').value;
+                payload = { students: data, csvType };
+            } else if (type === 'buses') {
+                const csvType = document.getElementById('bus-list-type').value;
+                const busList = data.map(item => ({
+                    name: item.bus || Object.values(item)[0],
+                    overflow: parseInt(item.overflow) || 40
+                })).filter(b => b.name);
+                payload = { buses: busList, csvType };
+            }
+            btn.disabled = true;
+            status.textContent = 'Uploading...';
+            status.className = 'status-msg';
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/config/${type}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    status.textContent = result.message || 'Upload successful';
+                    status.className = 'status-msg success';
+                    btn.disabled = true;
+                } else {
+                    status.textContent = result.error || 'Upload failed';
+                    status.className = 'status-msg error';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                status.textContent = 'Network error';
+                status.className = 'status-msg error';
+                btn.disabled = false;
+            }
+        }
+
+        let accounts = [];
+
+        async function fetchAccounts() {
+            const status = document.getElementById('status-accounts');
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/accounts`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    accounts = await response.json();
+                    renderAccounts();
+                } else {
+                    const errText = await response.text();
+                    status.textContent = `Failed to fetch accounts (${response.status}): ${errText.slice(0, 50)}`;
+                    status.className = 'status-msg error';
+                }
+            } catch (err) {
+                status.textContent = `Network error: ${err.message}`;
+                status.className = 'status-msg error';
+            }
+        }
+
+        function renderAccounts() {
+            const body = document.getElementById('accounts-body');
+            body.innerHTML = '';
+            accounts.forEach((acc, index) => {
+                const type = acc.type || 'user';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${acc.username}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--secondary-text);">••••••••</span>
+                            <button class="text-btn" style="font-size: 11px;" onclick="resetPassword(${index})">Reset</button>
+                        </div>
+                    </td>
+                    <td><input type="text" value="${acc.name}" onchange="updateAccount(${index}, 'name', this.value)" class="table-input"></td>
+                    <td>
+                        <select onchange="updateAccount(${index}, 'type', this.value); this.className='table-input badge ' + (this.value === 'admin' ? 'badge-admin' : 'badge-user')" class="table-input badge ${type === 'admin' ? 'badge-admin' : 'badge-user'}" style="padding: 4px 6px !important; border: none; font-size: 11px;">
+                            <option value="user" ${type === 'user' ? 'selected' : ''}>User</option>
+                            <option value="admin" ${type === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </td>
+                    <td><button class="delete-btn" onclick="deleteAccount(${index})">Delete</button></td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function resetPassword(index) {
+            const newPass = prompt(`Enter new password for ${accounts[index].username}:`);
+            if (newPass && newPass.trim()) {
+                accounts[index].password = newPass.trim();
+                alert('Password set! Remember to "Save Changes" to persist to the server.');
+            }
+        }
+
+        function updateAccount(index, field, value) {
+            accounts[index][field] = value;
+        }
+
+        function addAccount() {
+            const userInp = document.getElementById('new-account-username');
+            const passInp = document.getElementById('new-account-password');
+            const nameInp = document.getElementById('new-account-name');
+            const typeInp = document.getElementById('new-account-type');
+            const status = document.getElementById('status-accounts');
+            const username = userInp.value.trim();
+            const password = passInp.value.trim();
+            const name = nameInp.value.trim();
+            const type = typeInp.value;
+            if (!username || !password || !name) {
+                status.textContent = 'Please fill all fields';
+                status.className = 'status-msg error';
+                return;
+            }
+            if (accounts.some(a => a.username === username)) {
+                status.textContent = 'Username already exists';
+                status.className = 'status-msg error';
+                return;
+            }
+            accounts.push({ username, password, name, type });
+            userInp.value = '';
+            passInp.value = '';
+            nameInp.value = '';
+            status.textContent = '';
+            renderAccounts();
+        }
+
+        function deleteAccount(index) {
+            const accountToDelete = accounts[index];
+            if (accountToDelete.username === adminUser) {
+                alert('You cannot delete your own account while logged in.');
+                return;
+            }
+            if (!confirm(`Are you sure you want to delete ${accountToDelete.username}?`)) return;
+            accounts.splice(index, 1);
+            renderAccounts();
+        }
+
+        async function saveAccounts() {
+            const btn = document.getElementById('save-accounts-btn');
+            const status = document.getElementById('status-accounts');
+            btn.disabled = true;
+            status.textContent = 'Saving changes...';
+            status.className = 'status-msg';
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/config/accounts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify(accounts)
+                });
+                if (response.ok) {
+                    status.textContent = 'Accounts updated successfully';
+                    status.className = 'status-msg success';
+                } else {
+                    const result = await response.json();
+                    status.textContent = result.error || 'Save failed';
+                    status.className = 'status-msg error';
+                }
+            } catch (err) {
+                status.textContent = 'Network error';
+                status.className = 'status-msg error';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

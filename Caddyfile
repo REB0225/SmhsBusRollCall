@@ -1,0 +1,21 @@
+# Caddyfile for Raspberry Pi 5
+
+# Admin Frontend
+admin.your-domain.com {
+    reverse_proxy localhost:5174
+}
+
+# Backend API
+api.your-domain.com {
+    reverse_proxy localhost:5001
+}
+
+# Alternatively, using a single domain with path prefix:
+# your-domain.com {
+#     handle_path /api/* {
+#         reverse_proxy localhost:5001
+#     }
+#     handle {
+#         reverse_proxy localhost:5174
+#     }
+# }
