@@ -303,6 +303,100 @@
         .settings-icon:hover {
             background: #f5f5f7;
         }
+
+        /* Photo Library Grid */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .photo-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #d2d2d7;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .photo-card-img {
+            width: 100%;
+            height: 180px;
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .photo-card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-card-info {
+            padding: 12px;
+            border-top: 1px solid #f5f5f7;
+        }
+
+        .photo-card-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .photo-card-uid {
+            font-size: 11px;
+            color: var(--secondary-text);
+            font-family: monospace;
+        }
+
+        .photo-card-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .photo-card:hover .photo-card-actions {
+            opacity: 1;
+        }
+
+        .photo-action-btn {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+
+        .photo-action-btn.delete { color: #ff3b30; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -359,6 +453,7 @@
 <div class="tabs">
     <div class="tab active" onclick="switchTab('export')">Export Records</div>
     <div class="tab" onclick="switchTab('temp-riders')">Temporary Riders</div>
+    <div class="tab" onclick="switchTab('photos')">Photo Library</div>
     <div class="tab" onclick="switchTab('config')">Admin Config</div>
 </div>
 
@@ -453,6 +548,23 @@
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Photo Library Tab -->
+<div id="photosTab" class="tab-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h1>Photo Library</h1>
+            <p class="subtitle">Manage all student photos stored in Firestore</p>
+        </div>
+        <div style="width: 300px;">
+            <input type="text" id="photo-search" placeholder="Search by name or UID..." oninput="filterPhotos()" class="table-input" style="width: 100%; padding: 10px 15px !important;">
+        </div>
+    </div>
+
+    <div id="photo-grid" class="photo-grid">
+        <!-- Photo cards injected here -->
     </div>
 </div>
 
@@ -635,6 +747,25 @@
                     <p id="status-buses" class="status-msg"></p>
                     <div id="preview-buses" class="preview-container" style="display:none"></div>
                 </div>
+
+                <!-- Photo Management Card -->
+                <div class="config-card">
+                    <h3>Student Photo Manager</h3>
+                    <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">Upload a photo directly to Firestore for a student.</p>
+                    
+                    <div class="form-group">
+                        <label>Student UID</label>
+                        <input type="text" id="photo-upload-uid" placeholder="Enter student UID" class="table-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select Photo (JPG only, max 500KB recommended)</label>
+                        <input type="file" id="photo-upload-file" accept=".jpg,.jpeg">
+                    </div>
+
+                    <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="background-color: var(--primary); color: white; border: none; width: 100%;">Upload to Firestore</button>
+                    <p id="status-photo-upload" class="status-msg"></p>
+                </div>
             </div>
         </div>
     </div>
@@ -704,10 +835,15 @@
                 document.getElementById('tempRidersTab').classList.add('active');
                 fetchTempRiders();
                 populateSelectors();
-            } else {
+            } else if (tabName === 'photos') {
                 document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('photosTab').classList.add('active');
+                fetchPhotos();
+            } else {
+                document.querySelector('.tab:nth-child(4)').classList.add('active');
                 document.getElementById('configTab').classList.add('active');
                 fetchAccounts();
+                fetchSlots();
             }
         }
 
@@ -1519,6 +1655,134 @@
                 status.className = 'status-msg error';
             } finally {
                 btn.disabled = false;
+            }
+        }
+
+        async function uploadStudentPhoto() {
+            const uid = document.getElementById('photo-upload-uid').value.trim();
+            const fileInput = document.getElementById('photo-upload-file');
+            const status = document.getElementById('status-photo-upload');
+            const btn = document.getElementById('photo-upload-btn');
+
+            if (!uid || !fileInput.files[0]) {
+                status.textContent = 'Please enter UID and select a file';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (file.size > 1024 * 1024) { // 1MB limit for Firestore safety
+                status.textContent = 'File too large (Max 1MB)';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            btn.disabled = true;
+            status.textContent = 'Uploading...';
+            status.className = 'status-msg';
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64 = reader.result.split(',')[1];
+                try {
+                    const response = await fetch(`${BASE_URL}/api/admin/student/photo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                        body: JSON.stringify({ uid, photo: base64 })
+                    });
+                    if (response.ok) {
+                        status.textContent = 'Photo uploaded successfully!';
+                        status.className = 'status-msg success';
+                        document.getElementById('photo-upload-uid').value = '';
+                        fileInput.value = '';
+                    } else {
+                        const err = await response.json();
+                        status.textContent = err.error || 'Upload failed';
+                        status.className = 'status-msg error';
+                    }
+                } catch (err) {
+                    status.textContent = 'Network error';
+                    status.className = 'status-msg error';
+                } finally {
+                    btn.disabled = false;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        let allPhotos = [];
+        async function fetchPhotos() {
+            const grid = document.getElementById('photo-grid');
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px;"><div class="spinner"></div><p>Loading Library...</p></div>';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/photos`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    allPhotos = await response.json();
+                    renderPhotos(allPhotos);
+                } else {
+                    grid.innerHTML = '<p class="error">Failed to load photos</p>';
+                }
+            } catch (err) {
+                grid.innerHTML = '<p class="error">Network error</p>';
+            }
+        }
+
+        function renderPhotos(photos) {
+            const grid = document.getElementById('photo-grid');
+            grid.innerHTML = '';
+            
+            if (photos.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--secondary-text);">No photos found in database.</div>';
+                return;
+            }
+
+            photos.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'photo-card';
+                card.innerHTML = `
+                    <div class="photo-card-actions">
+                        <button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}', '${p.name}')" title="Delete Photo">✕</button>
+                    </div>
+                    <div class="photo-card-img" onclick="window.open('${BASE_URL}/api/photo/${p.uid}?token=${authToken}', '_blank')">
+                        <img src="${BASE_URL}/api/photo/${p.uid}?token=${authToken}" alt="${p.name}" loading="lazy" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'">
+                    </div>
+                    <div class="photo-card-info">
+                        <div class="photo-card-name">${p.name}</div>
+                        <div class="photo-card-uid">${p.uid}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterPhotos() {
+            const query = document.getElementById('photo-search').value.toLowerCase();
+            const filtered = allPhotos.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.uid.toLowerCase().includes(query)
+            );
+            renderPhotos(filtered);
+        }
+
+        async function deletePhoto(uid, name) {
+            if (!confirm(`Are you sure you want to delete the photo for ${name}?`)) return;
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/admin/student/photo/${uid}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    allPhotos = allPhotos.filter(p => p.uid !== uid);
+                    renderPhotos(allPhotos);
+                } else {
+                    alert('Delete failed');
+                }
+            } catch (err) {
+                alert('Network error');
             }
         }
     </script>
