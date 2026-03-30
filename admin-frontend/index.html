@@ -551,15 +551,22 @@
     </div>
 </div>
 
-<!-- Photo Library Tab -->
 <div id="photosTab" class="tab-content">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; gap: 20px;">
+        <div style="flex: 1;">
             <h1>Photo Library</h1>
             <p class="subtitle">Manage all student photos stored in Firestore</p>
+            <div style="width: 100%; max-width: 400px; margin-top: 10px;">
+                <input type="text" id="photo-search" placeholder="Search by name or UID..." oninput="filterPhotos()" class="table-input" style="width: 100%; padding: 10px 15px !important;">
+            </div>
         </div>
-        <div style="width: 300px;">
-            <input type="text" id="photo-search" placeholder="Search by name or UID..." oninput="filterPhotos()" class="table-input" style="width: 100%; padding: 10px 15px !important;">
+
+        <div class="config-card" style="margin: 0; flex: 1; max-width: 450px; padding: 1.5rem;">
+            <h3 style="margin-top: 0;">Bulk Upload Photos</h3>
+            <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 1rem;">Filenames must match student **Badge Number** (e.g. 211002.jpg)</p>
+            <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="margin-bottom: 10px;">
+            <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 10px; font-size: 14px;">Upload Multiple Files</button>
+            <div id="bulk-upload-status" class="status-msg" style="text-align: left; font-size: 12px; white-space: pre-line;"></div>
         </div>
     </div>
 
@@ -567,7 +574,6 @@
         <!-- Photo cards injected here -->
     </div>
 </div>
-
 <div id="configTab" class="tab-content">
     <h1>Admin Configuration</h1>
     <p class="subtitle">Update system data and time slots</p>
@@ -817,6 +823,7 @@
         let adminName = localStorage.getItem('adminName') || 'Admin';
         let adminUser = localStorage.getItem('adminUser') || '';
         let parsedData = { students: null, buses: null, accounts: null };
+        let allStudentsList = []; // For badge->UID mapping
 
         document.getElementById('datePicker').valueAsDate = new Date();
 
@@ -1131,6 +1138,20 @@
             document.querySelector('.container').classList.add('dashboard');
             fetchAccounts();
             fetchSlots();
+            fetchGlobalStudents();
+        }
+
+        async function fetchGlobalStudents() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/students`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    allStudentsList = Object.values(data);
+                    console.log(`[System] Loaded ${allStudentsList.length} students for mapping.`);
+                }
+            } catch (err) { console.error("Failed to fetch students for mapping", err); }
         }
 
         let slotConfigs = [];
@@ -1784,6 +1805,71 @@
             } catch (err) {
                 alert('Network error');
             }
+        }
+
+        async function uploadBulkPhotos() {
+            const input = document.getElementById('photo-bulk-input');
+            const status = document.getElementById('bulk-upload-status');
+            const btn = document.getElementById('bulk-upload-btn');
+            
+            if (!input.files || input.files.length === 0) {
+                status.textContent = 'Please select at least one file.';
+                return;
+            }
+
+            btn.disabled = true;
+            status.textContent = `Processing ${input.files.length} files...\n`;
+            
+            let successCount = 0;
+            let skipCount = 0;
+            let failCount = 0;
+
+            for (const file of input.files) {
+                // Get filename without extension
+                const badge = file.name.split('.')[0];
+                
+                // Find student by badge number in the global list
+                const student = allStudentsList.find(s => s.badge === badge);
+                
+                if (!student) {
+                    status.textContent += `⚠️ Skipped: ${file.name} (Badge ${badge} not found in database)\n`;
+                    skipCount++;
+                    continue;
+                }
+
+                try {
+                    // Convert to base64
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+
+                    // Upload
+                    const response = await fetch(`${BASE_URL}/api/admin/student/photo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                        body: JSON.stringify({ uid: student.uid, photo: base64 })
+                    });
+
+                    if (response.ok) {
+                        status.textContent += `✅ Uploaded: ${student.name} (${badge})\n`;
+                        successCount++;
+                    } else {
+                        status.textContent += `❌ Failed: ${file.name}\n`;
+                        failCount++;
+                    }
+                } catch (err) {
+                    status.textContent += `❌ Error: ${file.name}\n`;
+                    failCount++;
+                }
+            }
+
+            status.textContent += `\n--- Finished: ${successCount} Success, ${skipCount} Skipped, ${failCount} Failed ---`;
+            btn.disabled = false;
+            input.value = ''; // Clear input
+            fetchPhotos(); // Refresh grid
         }
     </script>
 </body>
