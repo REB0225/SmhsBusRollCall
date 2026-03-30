@@ -1234,10 +1234,14 @@ app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
     const filename = `${badge}.jpg`;
 
     try {
-        console.log(`[GDrive] Searching for ${filename} (Private Access)...`);
+        console.log(`[GDrive] Searching for photo starting with ${badge} in folder ${gdriveFolderId}...`);
         
-        const query = encodeURIComponent(`name='${filename}' and '${gdriveFolderId}' in parents and trashed=false`);
-        const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`;
+        // 1. Search for the file. 
+        // We use 'contains' for name to be more flexible with extensions/case if needed, 
+        // but exact name is safer if multiple files exist. 
+        // Added supportsAllDrives for organizational Shared Drives.
+        const query = encodeURIComponent(`name contains '${badge}' and '${gdriveFolderId}' in parents and trashed=false`);
+        const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
         
         const searchRes = await fetch(searchUrl, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -1245,9 +1249,12 @@ app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
         const searchData: any = await searchRes.json();
 
         if (searchData.files && searchData.files.length > 0) {
-            const fileId = searchData.files[0].id;
+            // Find the best match (exact or first)
+            const file = searchData.files.find((f: any) => f.name.toLowerCase().startsWith(badge.toLowerCase())) || searchData.files[0];
+            const fileId = file.id;
+            console.log(`[GDrive] Found file: ${file.name} (ID: ${fileId})`);
             
-            const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+            const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
             const downloadRes = await fetch(downloadUrl, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
@@ -1257,7 +1264,12 @@ app.get('/api/photo/:uid', authorize, async (req: Request, res: Response) => {
                 res.setHeader('Content-Type', 'image/jpeg');
                 res.setHeader('Cache-Control', 'public, max-age=3600');
                 return res.send(Buffer.from(arrayBuffer));
+            } else {
+                console.error(`[GDrive] Download failed: ${downloadRes.status}`);
             }
+        } else {
+            console.log(`[GDrive] No files matched query in folder.`);
+            if (searchData.error) console.error(`[GDrive] API Error Details:`, searchData.error);
         }
         
         res.status(404).json({ error: "Photo not found in Drive" });
