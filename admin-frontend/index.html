@@ -904,19 +904,35 @@
         function renderTempRiders(riders) {
             const body = document.getElementById('temp-riders-body');
             body.innerHTML = '';
-            riders.sort((a,b) => b.date.localeCompare(a.date)).forEach(rider => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${rider.date}</td>
-                    <td>${rider.timeSlot}</td>
-                    <td><span class="bus-badge" style="font-size: 11px;">${rider.bus}</span></td>
-                    <td>${rider.name}</td>
-                    <td>${rider.badge || '---'}</td>
-                    <td style="font-family: monospace;">${rider.uid}</td>
-                    <td><button class="delete-btn" onclick="deleteTempRider('${rider.id}')">Delete</button></td>
-                `;
-                body.appendChild(tr);
-            });
+            
+            // Get current Taipei date for filtering
+            const now = new Date();
+            const taipeiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+            taipeiDate.setHours(0, 0, 0, 0);
+            
+            // Filter: Hide if assignment date is older than (Today - 1 day)
+            const cutoff = new Date(taipeiDate);
+            cutoff.setDate(cutoff.getDate() - 1);
+
+            riders
+                .filter(rider => {
+                    const riderDate = new Date(rider.date);
+                    return riderDate >= cutoff;
+                })
+                .sort((a,b) => b.date.localeCompare(a.date))
+                .forEach(rider => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${rider.date}</td>
+                        <td>${rider.timeSlot}</td>
+                        <td><span class="bus-badge" style="font-size: 11px;">${rider.bus}</span></td>
+                        <td>${rider.name}</td>
+                        <td>${rider.badge || '---'}</td>
+                        <td style="font-family: monospace;">${rider.uid}</td>
+                        <td><button class="delete-btn" onclick="deleteTempRider('${rider.id}')">Delete</button></td>
+                    `;
+                    body.appendChild(tr);
+                });
         }
 
         async function deleteTempRider(id) {
