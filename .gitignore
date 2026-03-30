@@ -37,7 +37,13 @@ backend/search-student.ts
 Thumbs.db
 
 # Xcode / iOS
-iPhoneApp
+**/xcuserdata/
+**/DerivedData/
+/*.xcworkspace/
+!**/*.xcworkspace/contents.xcworkspacedata
+**/*.xcuserstate
+**/build/
+**/Index/
 
 # Arduino
 **/build/
