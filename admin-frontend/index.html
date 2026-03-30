@@ -27,14 +27,14 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
         #loginSection {
             max-width: 400px;
-            margin-top: 100px;
+            margin: 100px auto 0;
             background: var(--card);
             padding: 2rem;
             border-radius: 20px;
@@ -89,7 +89,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .admin-cards { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+        .admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 2rem; }
         .config-card { background: white; border: 1px solid #d2d2d7; border-radius: 15px; padding: 1.5rem; }
         .config-card h3 { margin-top: 0; font-size: 18px; margin-bottom: 1rem; }
 
@@ -141,7 +141,7 @@
                 <p class="subtitle">進入管理後台控制面板</p>
             </div>
             <div class="settings-icon" onclick="openSettings()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </div>
         </div>
         <div class="form-group">
@@ -177,28 +177,32 @@
         <div id="exportTab" class="tab-content active">
             <h1>匯出點名記錄</h1>
             <p class="subtitle">下載指定日期與時段的 CSV 報表</p>
-            <div class="config-card" style="max-width: 500px;">
-                <div class="form-group">
-                    <label>日期</label>
-                    <input type="date" id="datePicker">
+            <div class="config-card">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input type="date" id="datePicker">
+                    </div>
+                    <div class="form-group">
+                        <label>時段</label>
+                        <select id="slotPicker">
+                            <option value="07:00-09:00">早上 (07:00-09:00)</option>
+                            <option value="16:00-18:00">下午 (16:00-18:00)</option>
+                            <option value="19:00-21:00">晚上 (19:00-21:00)</option>
+                            <option value="Not in time">其他 (不在時段內)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>時段</label>
-                    <select id="slotPicker">
-                        <option value="07:00-09:00">早上 (07:00-09:00)</option>
-                        <option value="16:00-18:00">下午 (16:00-18:00)</option>
-                        <option value="19:00-21:00">晚上 (19:00-21:00)</option>
-                        <option value="Not in time">其他 (不在時段內)</option>
-                    </select>
+                <div style="display: flex; gap: 15px;">
+                    <button id="downloadBtn" class="primary-btn" onclick="downloadCSV()">下載單日 CSV</button>
+                    <button id="downloadWeekBtn" class="secondary-btn" onclick="downloadWeekCSV()">下載全週記錄 (一至五)</button>
                 </div>
-                <button id="downloadBtn" class="primary-btn" onclick="downloadCSV()">下載單日 CSV</button>
-                <button id="downloadWeekBtn" class="secondary-btn" onclick="downloadWeekCSV()">下載全週記錄 (一至五)</button>
                 <p id="downloadError" class="error"></p>
             </div>
         </div>
 
         <!-- Tab: Temporary Riders -->
-        <div id="tempRidersTab" class="tab-content">
+        <div id="temp-ridersTab" class="tab-content">
             <h1>臨時搭乘管理</h1>
             <p class="subtitle">手動指派學生至特定行程</p>
             <div class="admin-cards">
@@ -313,36 +317,38 @@
                     </table></div>
                 </div>
                 <!-- Lists -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div class="config-card">
-                        <h3>學生名單上傳</h3>
-                        <select id="student-list-type" class="table-input" style="margin-bottom: 10px;">
-                            <option value="arrival">早上名單</option>
-                            <option value="full_departure">下午名單</option>
-                            <option value="night_class_afternoon">夜間下午</option>
-                            <option value="night_class_night">夜間晚上</option>
-                        </select>
-                        <input type="file" id="file-students" accept=".csv" style="font-size: 12px;">
-                        <div class="btn-group">
-                            <button onclick="previewCSV('students')" class="secondary-btn" style="font-size: 13px; padding: 8px;">預覽</button>
-                            <button id="upload-students" onclick="uploadConfig('students')" disabled class="primary-btn" style="font-size: 13px; padding: 8px;">上傳</button>
+                <div class="config-card" style="grid-column: 1 / -1;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <h3>學生名單上傳</h3>
+                            <select id="student-list-type" class="table-input" style="margin-bottom: 10px;">
+                                <option value="arrival">早上名單</option>
+                                <option value="full_departure">下午名單</option>
+                                <option value="night_class_afternoon">夜間下午</option>
+                                <option value="night_class_night">夜間晚上</option>
+                            </select>
+                            <input type="file" id="file-students" accept=".csv" style="font-size: 12px;">
+                            <div class="btn-group">
+                                <button onclick="previewCSV('students')" class="secondary-btn" style="font-size: 13px; padding: 8px;">預覽</button>
+                                <button id="upload-students" onclick="uploadConfig('students')" disabled class="primary-btn" style="font-size: 13px; padding: 8px;">上傳</button>
+                            </div>
+                            <div id="preview-students" class="preview-container" style="display:none"></div>
+                            <p id="status-students" class="status-msg"></p>
                         </div>
-                        <div id="preview-students" class="preview-container" style="display:none"></div>
-                        <p id="status-students" class="status-msg"></p>
-                    </div>
-                    <div class="config-card">
-                        <h3>車次名單上傳</h3>
-                        <select id="bus-list-type" class="table-input" style="margin-bottom: 10px;">
-                            <option value="arrival">早上名單</option>
-                            <option value="full_departure">下午名單</option>
-                        </select>
-                        <input type="file" id="file-buses" accept=".csv" style="font-size: 12px;">
-                        <div class="btn-group">
-                            <button onclick="previewCSV('buses')" class="secondary-btn" style="font-size: 13px; padding: 8px;">預覽</button>
-                            <button id="upload-buses" onclick="uploadConfig('buses')" disabled class="primary-btn" style="font-size: 13px; padding: 8px;">上傳</button>
+                        <div>
+                            <h3>車次名單上傳</h3>
+                            <select id="bus-list-type" class="table-input" style="margin-bottom: 10px;">
+                                <option value="arrival">早上名單</option>
+                                <option value="full_departure">下午名單</option>
+                            </select>
+                            <input type="file" id="file-buses" accept=".csv" style="font-size: 12px;">
+                            <div class="btn-group">
+                                <button onclick="previewCSV('buses')" class="secondary-btn" style="font-size: 13px; padding: 8px;">預覽</button>
+                                <button id="upload-buses" onclick="uploadConfig('buses')" disabled class="primary-btn" style="font-size: 13px; padding: 8px;">上傳</button>
+                            </div>
+                            <div id="preview-buses" class="preview-container" style="display:none"></div>
+                            <p id="status-buses" class="status-msg"></p>
                         </div>
-                        <div id="preview-buses" class="preview-container" style="display:none"></div>
-                        <p id="status-buses" class="status-msg"></p>
                     </div>
                 </div>
             </div>
@@ -445,8 +451,16 @@
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
-            document.getElementById(`${tabName}Tab`).classList.add('active');
+            
+            // Find tab header and content
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => {
+                if(t.getAttribute('onclick').includes(`'${tabName}'`)) t.classList.add('active');
+            });
+            
+            const targetContent = document.getElementById(`${tabName}Tab`);
+            if(targetContent) targetContent.classList.add('active');
+
             if (tabName === 'temp-riders') { fetchTempRiders(); populateSelectors(); }
             if (tabName === 'photos') { fetchPhotos(); }
         }
@@ -671,7 +685,7 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                 body: JSON.stringify({ date, timeSlot: slot, bus, uid, name, badge })
             });
-            if (res.ok) { fetchTempRiders(); document.getElementById('temp-uid').value = ''; document.getElementById('temp-name').value = ''; }
+            if (res.ok) { fetchTempRiders(); document.getElementById('temp-uid').value = ''; document.getElementById('temp-name').value = ''; document.getElementById('temp-badge').value = ''; }
         }
 
         function populateSelectors() {
@@ -719,7 +733,6 @@
             }
         }
 
-        // CSV Logic (Simplified localized version)
         async function previewCSV(type) {
             const file = document.getElementById(`file-${type}`).files[0];
             if (!file) return;
@@ -745,17 +758,10 @@
                 headers.forEach((h, i) => obj[h] = values[i]);
                 return obj;
             });
-
-            const csvType = type === 'accounts' ? null : document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`).value;
-            const payload = type === 'students' ? { students: rows, csvType } : (type === 'buses' ? { buses: rows.map(r => ({ name: r.bus || Object.values(r)[0], overflow: parseInt(r.overflow) || 40 })), csvType } : rows);
-            const url = `${BASE_URL}/api/admin/config/${type}`;
-            
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) { alert('上傳成功'); location.reload(); }
+            const csvType = document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`).value;
+            const payload = type === 'students' ? { students: rows, csvType } : { buses: rows.map(r => ({ name: r.bus || Object.values(r)[0], overflow: parseInt(r.overflow) || 40 })), csvType };
+            await fetch(`${BASE_URL}/api/admin/config/${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify(payload) });
+            alert('上傳成功'); location.reload();
         }
 
         async function downloadCSV() {
@@ -767,9 +773,7 @@
             if (res.ok) {
                 const blob = await res.blob();
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `roll-call-${d}-${s}.csv`;
-                a.click();
+                a.href = URL.createObjectURL(blob); a.download = `roll-call-${d}-${s}.csv`; a.click();
             }
         }
 
@@ -781,16 +785,13 @@
             const diff = (day === 0 ? -6 : 1) - day;
             const mon = new Date(date); mon.setDate(date.getDate() + diff);
             const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
-            const start = mon.toISOString().split('T')[0];
-            const end = fri.toISOString().split('T')[0];
-            const res = await fetch(`${BASE_URL}/api/admin/rollcall-week?startDate=${start}&endDate=${end}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const res = await fetch(`${BASE_URL}/api/admin/rollcall-week?startDate=${mon.toISOString().split('T')[0]}&endDate=${fri.toISOString().split('T')[0]}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
             if (res.ok) {
                 const data = await res.json();
                 for (const name in data.files) {
                     const blob = new Blob([data.files[name]], { type: 'text/csv;charset=utf-8;' });
                     const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob); a.download = name;
-                    a.click();
+                    a.href = URL.createObjectURL(blob); a.download = name; a.click();
                     await new Promise(r => setTimeout(r, 300));
                 }
             }
