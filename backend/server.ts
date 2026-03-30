@@ -121,6 +121,46 @@ let slotConfigs: SlotMapping[] = [
 
 let defaultSlot: Omit<SlotMapping, 'start' | 'end'> = { csvType: "arrival", label: "Not in time" };
 
+const SLOT_CONFIG_PATH = path.resolve(__dirname, 'slot-configs.json');
+
+const saveSlotConfigs = async () => {
+    if (firestore) {
+        try {
+            await firestore!.collection('config').doc('slots').set({ slots: slotConfigs, default: defaultSlot });
+            console.log('[System] Slot configs saved to Firestore');
+        } catch (err) { console.error('[Error] Failed to save slots to Firestore', err); }
+    }
+    // Still save to local for Pi fallback
+    fs.writeFileSync(SLOT_CONFIG_PATH, JSON.stringify({ slots: slotConfigs, default: defaultSlot }, null, 2), 'utf8');
+};
+
+const initConfigs = async () => {
+    // 1. Try local file baseline
+    if (fs.existsSync(SLOT_CONFIG_PATH)) {
+        try {
+            const saved = JSON.parse(fs.readFileSync(SLOT_CONFIG_PATH, 'utf8'));
+            slotConfigs = saved.slots || slotConfigs;
+            defaultSlot = saved.default || defaultSlot;
+        } catch (err) { console.error("Error loading local slot-configs.json"); }
+    }
+
+    // 2. Try Firestore override (Production Truth)
+    if (firestore) {
+        try {
+            const doc = await firestore!.collection('config').doc('slots').get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data?.slots) slotConfigs = data.slots;
+                if (data?.default) defaultSlot = data.default;
+                console.log('[System] Slot configs loaded from Firestore');
+            }
+        } catch (err) { console.error("Error loading slots from Firestore", err); }
+    }
+};
+
+// Start init process
+setTimeout(() => initConfigs(), 1000); // Small delay to ensure Firestore is ready
+
 const getTimeSlotInfo = (dateObj: Date = new Date()) => {
     const taipeiTime = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
     const day = taipeiTime.getDay();
@@ -665,11 +705,11 @@ app.get('/api/admin/bus-occupancy', authorize, async (req: Request, res: Respons
 
 // Time Slot Config Endpoints (Standard Logic Retained)
 app.get('/api/admin/config/slots', authorize, (req, res) => res.json({ slots: slotConfigs, default: defaultSlot }));
-app.post('/api/admin/config/slots', authorize, (req, res) => {
+app.post('/api/admin/config/slots', authorize, async (req, res) => {
     const { slots, default: newDefault } = req.body;
     slotConfigs = slots;
     if (newDefault) defaultSlot = newDefault;
-    fs.writeFileSync(SLOT_CONFIG_PATH, JSON.stringify({ slots: slotConfigs, default: defaultSlot }, null, 2));
+    await saveSlotConfigs();
     res.json({ success: true });
 });
 
@@ -694,18 +734,50 @@ app.post('/api/admin/config/buses', authorize, async (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/admin/config/accounts', authorize, async (req, res) => {
+app.post('/api/admin/config/accounts', authorize, async (req: Request, res: Response) => {
     const accounts = req.body;
-    if (firestore) {
-        const batch = firestore!.batch();
-        accounts.forEach((a: any) => batch.set(firestore!.collection('accounts').doc(a.username), a));
-        await batch.commit();
-    }
-    res.json({ success: true });
-});
+    if (!Array.isArray(accounts)) return res.status(400).json({ error: "Invalid format" });
 
-const SLOT_CONFIG_PATH = path.resolve(__dirname, 'slot-configs.json');
-const saveSlotConfigs = () => fs.writeFileSync(SLOT_CONFIG_PATH, JSON.stringify({ slots: slotConfigs, default: defaultSlot }, null, 2));
+    if (firestore) {
+        try {
+            // Get all current usernames to handle deletions
+            const snapshot = await firestore!.collection('accounts').get();
+            const existingUsernames = snapshot.docs.map(doc => doc.id);
+            const newUsernames = new Set(accounts.map((a: any) => a.username));
+
+            const batch = firestore!.batch();
+            
+            // Set/Update accounts
+            accounts.forEach((a: any) => {
+                if (a.username) {
+                    const { username, ...data } = a;
+                    batch.set(firestore!.collection('accounts').doc(username), data, { merge: true });
+                }
+            });
+
+            // Delete removed accounts
+            existingUsernames.forEach(uname => {
+                if (!newUsernames.has(uname)) {
+                    batch.delete(firestore!.collection('accounts').doc(uname));
+                }
+            });
+
+            await batch.commit();
+            res.json({ success: true });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: "Failed to update accounts in Firestore" });
+        }
+    } else {
+        try {
+            const accountsPath = path.resolve(__dirname, 'accounts.json');
+            fs.writeFileSync(accountsPath, JSON.stringify(accounts, null, 2), 'utf8');
+            res.json({ success: true });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to save local accounts" });
+        }
+    }
+});
 
 export default app;
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
