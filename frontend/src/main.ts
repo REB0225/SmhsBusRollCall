@@ -39,6 +39,7 @@ class App {
   private reviewSheet = document.getElementById('review-sheet')!;
   private reviewList = document.getElementById('review-list')!;
   private reviewSummary = document.getElementById('review-summary')!;
+  private loadingOverlay = document.getElementById('loading-overlay')!;
 
   // State
   private authToken: string | null = null;
@@ -267,22 +268,9 @@ class App {
   }
 
   private async handleScan(uid: string) {
-    // 1. Resolve student from local cache or fetch from backend
-    let student = this.allStudents[uid];
+    // 1. Resolve student from local cache ONLY for instant response
+    const student = this.allStudents[uid];
     
-    if (!student) {
-        console.log(`[Scan] UID ${uid} not in cache, fetching from backend...`);
-        try {
-            const res = await fetch(`${BASE_URL}/api/student/${uid}`, {
-                headers: { 'Authorization': `Bearer ${this.authToken}` }
-            });
-            if (res.ok) {
-                student = await res.json();
-                this.allStudents[uid] = student; // Cache it
-            }
-        } catch (e) { console.error("Lookup error", e); }
-    }
-
     this.currentStudent = student || { uid, name: "Unknown Tag", badge: "---", bus: "Unknown" };
     
     // 2. Update UI
