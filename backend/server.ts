@@ -113,53 +113,70 @@ interface SlotMapping {
 
 // Default rules as specified by user
 let slotConfigs: SlotMapping[] = [
-    { start: "07:00", end: "09:00", csvType: "arrival", label: "Morning" },
-    { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "Friday Afternoon" },
-    { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "Mon-Thu Afternoon" },
-    { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "Mon-Thu Night" }
+    { start: "07:00", end: "09:00", csvType: "arrival", label: "早上" },
+    { day: 5, start: "16:00", end: "18:00", csvType: "full_departure", label: "週五下午" },
+    { days: [1, 2, 3, 4], start: "16:00", end: "18:00", csvType: "night_class_afternoon", label: "週一至四下午" },
+    { days: [1, 2, 3, 4], start: "19:00", end: "21:00", csvType: "night_class_night", label: "週一至四晚上" }
 ];
 
-let defaultSlot: Omit<SlotMapping, 'start' | 'end'> = { csvType: "arrival", label: "Not in time" };
+let defaultSlot: Omit<SlotMapping, 'start' | 'end'> = { csvType: "arrival", label: "不在時段內" };
 
 const SLOT_CONFIG_PATH = path.resolve(__dirname, 'slot-configs.json');
 
 const saveSlotConfigs = async () => {
+    console.log('[System] Saving slot configs...');
     if (firestore) {
         try {
-            await firestore!.collection('config').doc('slots').set({ slots: slotConfigs, default: defaultSlot });
-            console.log('[System] Slot configs saved to Firestore');
+            await firestore!.collection('config').doc('slots').set({ 
+                slots: slotConfigs, 
+                default: defaultSlot,
+                updatedAt: new Date().toISOString()
+            });
+            console.log('[System] Slot configs successfully saved to Firestore');
         } catch (err) { console.error('[Error] Failed to save slots to Firestore', err); }
     }
     // Still save to local for Pi fallback
     fs.writeFileSync(SLOT_CONFIG_PATH, JSON.stringify({ slots: slotConfigs, default: defaultSlot }, null, 2), 'utf8');
 };
 
-const initConfigs = async () => {
-    // 1. Try local file baseline
+const initConfigs = async (db: admin.firestore.Firestore | null) => {
+    console.log('[System] Initializing configurations...');
+    // 1. Load local file baseline
     if (fs.existsSync(SLOT_CONFIG_PATH)) {
         try {
             const saved = JSON.parse(fs.readFileSync(SLOT_CONFIG_PATH, 'utf8'));
             slotConfigs = saved.slots || slotConfigs;
             defaultSlot = saved.default || defaultSlot;
+            console.log('[System] Local slot-configs.json loaded');
         } catch (err) { console.error("Error loading local slot-configs.json"); }
     }
 
-    // 2. Try Firestore override (Production Truth)
-    if (firestore) {
+    // 2. Load Firestore override (Production Truth)
+    if (db) {
         try {
-            const doc = await firestore!.collection('config').doc('slots').get();
+            const doc = await db.collection('config').doc('slots').get();
             if (doc.exists) {
                 const data = doc.data();
-                if (data?.slots) slotConfigs = data.slots;
-                if (data?.default) defaultSlot = data.default;
-                console.log('[System] Slot configs loaded from Firestore');
+                if (data?.slots) {
+                    slotConfigs = data.slots;
+                    console.log(`[System] ${data.slots.length} slots loaded from Firestore`);
+                }
+                if (data?.default) {
+                    defaultSlot = data.default;
+                    console.log(`[System] Default slot '${data.default.label}' loaded from Firestore`);
+                }
+            } else {
+                console.log('[System] No slot config found in Firestore, using defaults/local.');
             }
         } catch (err) { console.error("Error loading slots from Firestore", err); }
     }
 };
 
-// Start init process
-setTimeout(() => initConfigs(), 1000); // Small delay to ensure Firestore is ready
+// Run init process via wrapper to ensure it runs after firestore is assigned
+const runInit = async () => {
+    await initConfigs(firestore);
+};
+runInit();
 
 const getTimeSlotInfo = (dateObj: Date = new Date()) => {
     const taipeiTime = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
