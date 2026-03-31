@@ -245,14 +245,44 @@ app.post('/api/admin/config/slots', authorize, async (req, res) => {
 app.post('/api/admin/config/accounts', authorize, async (req, res) => {
     try {
         const accountsIn = req.body;
-        if (firestore && Array.isArray(accountsIn)) {
+        if (!Array.isArray(accountsIn)) return res.status(400).json({ error: "Invalid data format" });
+
+        if (firestore) {
             const batch = firestore.batch();
+            
+            // 1. Handle Deletions: Fetch existing accounts and find those not in the new list
+            const snapshot = await firestore.collection('accounts').get();
+            const existingIds = snapshot.docs.map(doc => doc.id);
+            const newIds = accountsIn.map((a: any) => a.username).filter(Boolean);
+            
+            const toDelete = existingIds.filter(id => !newIds.includes(id));
+            toDelete.forEach(id => {
+                batch.delete(firestore!.collection('accounts').doc(id));
+            });
+
+            // 2. Handle Upserts (Add/Update)
             accountsIn.forEach((a: any) => {
                 const { username, ...data } = a;
-                batch.set(firestore!.collection('accounts').doc(username), data);
+                if (username) {
+                    batch.set(firestore!.collection('accounts').doc(username), data);
+                }
             });
+            
             await batch.commit();
+            console.log('[System] Firestore accounts sync successful');
         }
+
+        // Always attempt to save locally as a backup or for Local Mode
+        try {
+            const accountsPath = path.resolve(__dirname, 'accounts.json');
+            fs.writeFileSync(accountsPath, JSON.stringify(accountsIn, null, 2), 'utf8');
+            console.log('[System] Local accounts save successful');
+        } catch (err) {
+            console.warn('[Warning] Local accounts save failed:', err);
+            // If firestore succeeded, we still consider the whole operation a success
+            if (!firestore) throw err; 
+        }
+
         res.json({ success: true });
     } catch (err) {
         console.error('[Error] Failed to save accounts:', err);
