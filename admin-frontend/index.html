@@ -548,14 +548,31 @@
 
         async function saveAccounts() {
             const status = document.getElementById('status-accounts');
+            const btn = document.getElementById('save-accounts-btn');
+            btn.disabled = true;
+            status.textContent = '儲存中...';
             try {
                 const res = await fetch(`${BASE_URL}/api/admin/config/accounts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify(accounts)
                 });
-                if (res.ok) { status.textContent = '帳號已成功更新！'; status.className = 'status-msg success'; }
-            } catch (err) { status.textContent = '網路錯誤'; status.className = 'status-msg error'; }
+                if (res.ok) { 
+                    status.textContent = '帳號已成功更新！'; 
+                    status.className = 'status-msg success'; 
+                    alert('帳號已成功更新！');
+                } else {
+                    status.textContent = '儲存失敗';
+                    status.className = 'status-msg error';
+                    alert('儲存失敗');
+                }
+            } catch (err) { 
+                status.textContent = '網路錯誤'; 
+                status.className = 'status-msg error'; 
+                alert('網路錯誤');
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         async function fetchSlots() {
@@ -603,14 +620,31 @@
 
         async function saveSlots() {
             const status = document.getElementById('status-slots');
+            const btn = document.getElementById('save-slots-btn');
+            btn.disabled = true;
+            status.textContent = '儲存中...';
             try {
                 const res = await fetch(`${BASE_URL}/api/admin/config/slots`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify({ slots: slotConfigs, default: defaultSlot })
                 });
-                if (res.ok) { status.textContent = '配置已成功儲存至資料庫！'; status.className = 'status-msg success'; }
-            } catch (err) { status.textContent = '網路錯誤'; status.className = 'status-msg error'; }
+                if (res.ok) { 
+                    status.textContent = '配置已成功儲存至資料庫！'; 
+                    status.className = 'status-msg success'; 
+                    alert('配置已成功儲存！');
+                } else {
+                    status.textContent = '儲存失敗';
+                    status.className = 'status-msg error';
+                    alert('儲存失敗');
+                }
+            } catch (err) { 
+                status.textContent = '網路錯誤'; 
+                status.className = 'status-msg error'; 
+                alert('網路錯誤');
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         function updateDefaultSlot() {
@@ -760,7 +794,14 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                 body: JSON.stringify({ date, timeSlot: slot, bus, uid, name, badge })
             });
-            if (res.ok) { fetchTempRiders(); document.getElementById('temp-uid').value = ''; document.getElementById('temp-name').value = ''; }
+            if (res.ok) { 
+                alert('指派成功');
+                fetchTempRiders(); 
+                document.getElementById('temp-uid').value = ''; 
+                document.getElementById('temp-name').value = ''; 
+            } else {
+                alert('指派失敗');
+            }
         }
 
         function populateSelectors() {
