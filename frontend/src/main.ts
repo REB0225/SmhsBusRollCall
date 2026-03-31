@@ -97,6 +97,15 @@ class App {
     document.getElementById('close-review')?.addEventListener('click', () => this.closeReview());
     document.getElementById('sync-now-btn')?.addEventListener('click', () => this.syncRecords());
 
+    const refreshBtn = document.getElementById('refresh-btn')!;
+    refreshBtn.addEventListener('click', async () => {
+        refreshBtn.classList.add('spinning');
+        await this.fetchBuses();
+        await this.fetchStudents();
+        refreshBtn.classList.remove('spinning');
+        alert("資料已更新！");
+    });
+
     // Bus Selection
     this.busSelect.addEventListener('change', () => {
         this.updateUIColors();
@@ -472,6 +481,7 @@ class App {
     }
 
     this.isSyncing = true;
+    this.loadingOverlay.style.display = 'flex';
     const btn = document.getElementById('sync-now-btn') as HTMLButtonElement;
     btn.textContent = "同步中...";
     btn.disabled = true;
@@ -499,6 +509,7 @@ class App {
         alert("網路錯誤");
     } finally {
         this.isSyncing = false;
+        this.loadingOverlay.style.display = 'none';
         btn.textContent = "確認並上傳至伺服器";
         btn.disabled = false;
     }

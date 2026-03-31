@@ -200,28 +200,62 @@ app.get('/api/buses', authorize, async (req: Request, res: Response) => {
 });
 
 app.get('/api/students', authorize, async (req: Request, res: Response) => {
-    const { date } = req.query;
-    const info = getTimeSlotInfo();
-    if (date) {
-        const { students } = await getStudentsForSlot(getTimeSlot(), date as string);
-        const studentMap: Record<string, any> = {};
-        students.forEach(s => studentMap[s.uid] = s);
-        return res.json(studentMap);
-    }
-    if (firestore) {
+    try {
+        const queryDate = req.query.date as string;
+        const now = new Date();
+        const taipeiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+        const currentDateStr = taipeiDate.getFullYear() + '-' + String(taipeiDate.getMonth() + 1).padStart(2, '0') + '-' + String(taipeiDate.getDate()).padStart(2, '0');
+        
+        const targetDateStr = queryDate || currentDateStr;
+        const timeSlot = getTimeSlot(now);
+        const info = getTimeSlotInfo(now);
+
         const students: Record<string, any> = {};
-        const snapshot = await firestore.collection('students').where('listType', '==', info.csvType).get();
-        snapshot.forEach(doc => students[doc.data().uid] = doc.data());
-        if (info.csvType === "arrival" || snapshot.empty) {
-            const allDocs = await firestore.collection('students').get();
-            allDocs.forEach(doc => {
+
+        if (firestore) {
+            // 1. Fetch Permanent Students for the current slot type
+            const snapshot = await firestore.collection('students').where('listType', '==', info.csvType).get();
+            snapshot.forEach(doc => {
                 const data = doc.data();
-                if (!data.listType || data.listType === "arrival") if (!students[data.uid]) { if (!data.badge) data.badge = ""; students[data.uid] = data; }
+                students[data.uid] = data;
+            });
+
+            // Fallback to arrival/legacy if empty
+            if (info.csvType === "arrival" || snapshot.empty) {
+                const allDocs = await firestore.collection('students').get();
+                allDocs.forEach(doc => {
+                    const data = doc.data();
+                    if (!data.listType || data.listType === "arrival") {
+                        if (!students[data.uid]) {
+                            if (!data.badge) data.badge = "";
+                            students[data.uid] = data;
+                        }
+                    }
+                });
+            }
+
+            // 2. Fetch Temporary Riders for the SPECIFIC target date and current slot
+            const tempSnapshot = await firestore.collection('temporaryRiders')
+                .where('date', '==', targetDateStr)
+                .where('timeSlot', '==', timeSlot)
+                .get();
+            
+            tempSnapshot.forEach(doc => {
+                const data = doc.data();
+                // Override or add as temporary
+                students[data.uid] = {
+                    ...data,
+                    listType: 'temporary',
+                    isTemporary: true
+                };
             });
         }
-        return res.json(students);
+
+        res.json(students);
+    } catch (err) {
+        console.error('[Error] Failed to fetch students:', err);
+        res.status(500).json({ error: "Failed to fetch student list" });
     }
-    res.json({});
 });
 
 app.get('/api/admin/config/slots', authorize, async (req, res) => {
