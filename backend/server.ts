@@ -242,6 +242,144 @@ app.post('/api/admin/config/accounts', authorize, async (req, res) => {
     res.json({ success: true });
 });
 
+app.get('/api/admin/accounts', authorize, async (req: Request, res: Response) => {
+    if (firestore) {
+        try {
+            const snapshot = await firestore.collection('accounts').get();
+            const accounts: any[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                accounts.push({ username: doc.id, ...data });
+            });
+            res.json(accounts);
+        } catch (err) { res.status(500).json({ error: "Failed to fetch accounts" }); }
+    } else {
+        const accountsPath = path.resolve(__dirname, 'accounts.json');
+        if (fs.existsSync(accountsPath)) {
+            try { res.json(JSON.parse(fs.readFileSync(accountsPath, 'utf8'))); }
+            catch (err) { res.status(500).json({ error: "Failed to read local accounts" }); }
+        } else { res.json([]); }
+    }
+});
+
+app.get('/api/admin/temporary-riders', authorize, async (req: Request, res: Response) => {
+    if (firestore) {
+        const snapshot = await firestore.collection('temporaryRiders').get();
+        res.json(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } else { res.json([]); }
+});
+
+app.post('/api/admin/temporary-riders', authorize, async (req: Request, res: Response) => {
+    const { date, timeSlot, bus, uid, name, badge } = req.body;
+    if (!firestore) return res.status(400).json({ error: "Firestore required" });
+    try {
+        await firestore.collection('temporaryRiders').add({ date, timeSlot, bus, uid, name, badge: badge || "---" });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to add" }); }
+});
+
+app.delete('/api/admin/temporary-riders/:id', authorize, async (req: Request, res: Response) => {
+    if (firestore) {
+        try {
+            await firestore.collection('temporaryRiders').doc(req.params.id).delete();
+            res.json({ success: true });
+        } catch (err) { res.status(500).json({ error: "Failed to delete" }); }
+    } else { res.status(400).json({ error: "Firestore required" }); }
+});
+
+app.get('/api/admin/bus-occupancy', authorize, async (req: Request, res: Response) => {
+    const { date, timeSlot, bus } = req.query;
+    if (!firestore || !date || !timeSlot || !bus) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const configDoc = await firestore.collection('config').doc(`buses_arrival`).get();
+        const busList = configDoc.data()?.list || [];
+        const busObj = busList.find((b: any) => (b.name || b) === bus);
+        const limit = busObj?.overflow || 40;
+        const students = await firestore.collection('students').where('bus', '==', bus).get();
+        const temps = await firestore.collection('temporaryRiders').where('date', '==', date).where('timeSlot', '==', timeSlot).where('bus', '==', bus).get();
+        res.json({ count: students.size + temps.size, overflowLimit: limit });
+    } catch (err) { res.status(500).json({ error: "Failed to check" }); }
+});
+
+app.post('/api/admin/config/students', authorize, async (req, res) => {
+    const { students, csvType } = req.body;
+    const type = csvType || "arrival";
+    if (firestore) {
+        for (let i = 0; i < students.length; i += 450) {
+            const batch = firestore.batch();
+            students.slice(i, i + 450).forEach((s: any) => {
+                if (s.uid) batch.set(firestore!.collection('students').doc(`${s.uid}_${type}`), { ...s, listType: type }, { merge: true });
+            });
+            await batch.commit();
+        }
+    }
+    res.json({ success: true });
+});
+
+app.post('/api/admin/config/buses', authorize, async (req, res) => {
+    const { buses, csvType } = req.body;
+    if (firestore) await firestore.collection('config').doc(`buses_${csvType || 'arrival'}`).set({ list: buses });
+    res.json({ success: true });
+});
+
+app.get('/api/admin/photos', authorize, async (req: Request, res: Response) => {
+    if (firestore) {
+        try {
+            const snapshot = await firestore.collection('students').orderBy('name').get();
+            const photos: any[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.photo) photos.push({ uid: data.uid, name: data.name, badge: data.badge });
+            });
+            res.json(photos);
+        } catch (err) { res.status(500).json({ error: "Failed to fetch photos" }); }
+    } else { res.json([]); }
+});
+
+app.delete('/api/admin/student/photo/:uid', authorize, async (req: Request, res: Response) => {
+    if (!firestore) return res.status(400).json({ error: "Firestore required" });
+    try {
+        const snapshot = await firestore.collection('students').where('uid', '==', req.params.uid).get();
+        const batch = firestore.batch();
+        snapshot.forEach(doc => batch.update(doc.ref, { photo: admin.firestore.FieldValue.delete() }));
+        await batch.commit();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to delete" }); }
+});
+
+app.post('/api/admin/student/photo', authorize, async (req: Request, res: Response) => {
+    const { uid, photo } = req.body;
+    if (!firestore || !uid || !photo) return res.status(400).json({ error: "Missing data" });
+    try {
+        const snapshot = await firestore.collection('students').where('uid', '==', uid).get();
+        if (snapshot.empty) return res.status(404).json({ error: "Student not found" });
+        const batch = firestore.batch();
+        snapshot.forEach(doc => batch.update(doc.ref, { photo }));
+        await batch.commit();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to upload" }); }
+});
+
+app.get('/api/photo/:uid', async (req: Request, res: Response) => {
+    const { token } = req.query;
+    if (token !== AUTH_TOKEN) return res.status(401).send('Unauthorized');
+    if (firestore) {
+        const snapshot = await firestore.collection('students').where('uid', '==', req.params.uid).limit(1).get();
+        if (!snapshot.empty && snapshot.docs[0].data().photo) {
+            const buffer = Buffer.from(snapshot.docs[0].data().photo, 'base64');
+            res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': buffer.length });
+            return res.end(buffer);
+        }
+    }
+    res.status(404).send('Not found');
+});
+
+app.get('/api/student/:uid', authorize, async (req: Request, res: Response) => {
+    const student = await findStudentData(req.params.uid);
+    if (student) res.json(student);
+    else res.status(404).json({ error: "Not found" });
+});
+
 // Helper functions for time calculation
 const getTimeSlotInfo = (dateObj: Date = new Date()) => {
     const taipeiTime = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
