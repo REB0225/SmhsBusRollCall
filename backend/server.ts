@@ -425,7 +425,48 @@ app.get('/api/photo/:uid', async (req: Request, res: Response) => {
 app.get('/api/student/:uid', authorize, async (req: Request, res: Response) => {
     const student = await findStudentData(req.params.uid);
     if (student) res.json(student);
-    else res.status(404).json({ error: "Not found" });
+    else res.status(404).json({ error: "Student not found" });
+});
+
+app.post('/api/rollcall/batch', authorize, async (req, res) => {
+    try {
+        const { records } = req.body;
+        if (!Array.isArray(records)) return res.status(400).json({ error: "Records array required" });
+        if (!firestore) return res.status(400).json({ error: "Firestore required for roll call" });
+
+        const batch = firestore.batch();
+        const results = [];
+
+        for (const record of records) {
+            const { uid, timestamp } = record;
+            if (!uid || !timestamp) continue;
+
+            const dateObj = new Date(timestamp);
+            const taipeiDate = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+            const dateStr = taipeiDate.getFullYear() + '-' + String(taipeiDate.getMonth() + 1).padStart(2, '0') + '-' + String(taipeiDate.getDate()).padStart(2, '0');
+            const timeSlot = getTimeSlot(dateObj);
+
+            // Create a unique ID for this record
+            const recordId = `${uid}_${dateStr}_${timeSlot.replace(/:/g, '-')}`;
+            const rollcallRef = firestore.collection('rollcalls').doc(recordId);
+
+            batch.set(rollcallRef, {
+                uid,
+                timestamp,
+                date: dateStr,
+                timeSlot,
+                syncedAt: new Date().toISOString()
+            }, { merge: true });
+
+            results.push({ uid, success: true });
+        }
+
+        await batch.commit();
+        res.json({ success: true, message: `Successfully synced ${results.length} records` });
+    } catch (err) {
+        console.error('[Error] Batch rollcall failed:', err);
+        res.status(500).json({ error: "Failed to sync rollcall data" });
+    }
 });
 
 // Helper functions for time calculation
