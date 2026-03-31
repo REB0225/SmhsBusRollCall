@@ -104,9 +104,17 @@ const saveSlotConfigs = async () => {
                 updatedAt: new Date().toISOString()
             });
             console.log('[System] Firestore save successful');
-        } catch (err) { console.error('[Error] Firestore save failed', err); }
+        } catch (err) { 
+            console.error('[Error] Firestore save failed', err);
+            // Don't throw if we want to still try local save, or throw to notify caller
+        }
     }
-    fs.writeFileSync(SLOT_CONFIG_PATH, JSON.stringify({ slots: slotConfigs, default: defaultSlot }, null, 2), 'utf8');
+    try {
+        fs.writeFileSync(SLOT_CONFIG_PATH, JSON.stringify({ slots: slotConfigs, default: defaultSlot }, null, 2), 'utf8');
+        console.log('[System] Local config save successful');
+    } catch (err) {
+        console.warn('[Warning] Local config save failed (possibly read-only filesystem):', err);
+    }
 };
 
 const initConfigs = async () => {
@@ -222,24 +230,34 @@ app.get('/api/admin/config/slots', authorize, async (req, res) => {
 });
 
 app.post('/api/admin/config/slots', authorize, async (req, res) => {
-    const { slots, default: newDefault } = req.body;
-    slotConfigs = slots;
-    if (newDefault) defaultSlot = newDefault;
-    await saveSlotConfigs();
-    res.json({ success: true });
+    try {
+        const { slots, default: newDefault } = req.body;
+        slotConfigs = slots;
+        if (newDefault) defaultSlot = newDefault;
+        await saveSlotConfigs();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Error] Failed to save slots:', err);
+        res.status(500).json({ error: "Failed to save slot configurations" });
+    }
 });
 
 app.post('/api/admin/config/accounts', authorize, async (req, res) => {
-    const accountsIn = req.body;
-    if (firestore && Array.isArray(accountsIn)) {
-        const batch = firestore.batch();
-        accountsIn.forEach((a: any) => {
-            const { username, ...data } = a;
-            batch.set(firestore!.collection('accounts').doc(username), data);
-        });
-        await batch.commit();
+    try {
+        const accountsIn = req.body;
+        if (firestore && Array.isArray(accountsIn)) {
+            const batch = firestore.batch();
+            accountsIn.forEach((a: any) => {
+                const { username, ...data } = a;
+                batch.set(firestore!.collection('accounts').doc(username), data);
+            });
+            await batch.commit();
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Error] Failed to save accounts:', err);
+        res.status(500).json({ error: "Failed to save accounts" });
     }
-    res.json({ success: true });
 });
 
 app.get('/api/admin/accounts', authorize, async (req: Request, res: Response) => {
