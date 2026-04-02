@@ -462,6 +462,11 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
+                    if (data.user.type !== 'admin') {
+                        error.textContent = '權限不足：僅限管理員登入';
+                        btn.disabled = false;
+                        return;
+                    }
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('adminName', data.user.name);
                     authToken = data.token;

@@ -48,14 +48,30 @@ if (serviceAccount) {
 }
 
 // Simple Auth Middleware
-const AUTH_TOKEN = "secret-bus-token-2026";
+const ADMIN_TOKEN = "secret-bus-admin-2026";
+const USER_TOKEN = "secret-bus-token-2026";
+
 const authorize = (req: Request, res: Response, next: Function) => {
   const authHeader = req.headers['authorization'];
   const queryToken = req.query.token as string;
-  if (authHeader === `Bearer ${AUTH_TOKEN}` || queryToken === AUTH_TOKEN) {
+  const token = (authHeader && authHeader.startsWith('Bearer ')) ? authHeader.substring(7) : queryToken;
+  
+  if (token === ADMIN_TOKEN || token === USER_TOKEN) {
     next();
   } else {
     res.status(401).json({ error: "Unauthorized" });
+  }
+};
+
+const authorizeAdmin = (req: Request, res: Response, next: Function) => {
+  const authHeader = req.headers['authorization'];
+  const queryToken = req.query.token as string;
+  const token = (authHeader && authHeader.startsWith('Bearer ')) ? authHeader.substring(7) : queryToken;
+  
+  if (token === ADMIN_TOKEN) {
+    next();
+  } else {
+    res.status(403).json({ error: "Forbidden: Admin access required" });
   }
 };
 
@@ -180,7 +196,11 @@ app.post('/api/login', async (req: Request, res: Response) => {
     if (firestore) {
         const userDoc = await firestore.collection('accounts').doc(username).get();
         const user = userDoc.data();
-        if (user && user.password === password) return res.json({ token: AUTH_TOKEN, user: { name: user.name, username, type: user.type || 'user' } });
+        if (user && user.password === password) {
+            const isAdmin = (user.type === 'admin' || username === 'admin');
+            const token = isAdmin ? ADMIN_TOKEN : USER_TOKEN;
+            return res.json({ token, user: { name: user.name, username, type: isAdmin ? 'admin' : 'user' } });
+        }
     }
     res.status(401).json({ error: "Invalid credentials" });
 });
@@ -258,12 +278,12 @@ app.get('/api/students', authorize, async (req: Request, res: Response) => {
     }
 });
 
-app.get('/api/admin/config/slots', authorize, async (req, res) => {
+app.get('/api/admin/config/slots', authorizeAdmin, async (req, res) => {
     await initConfigs(); // Force refresh from DB
     res.json({ slots: slotConfigs, default: defaultSlot });
 });
 
-app.post('/api/admin/config/slots', authorize, async (req, res) => {
+app.post('/api/admin/config/slots', authorizeAdmin, async (req, res) => {
     try {
         const { slots, default: newDefault } = req.body;
         slotConfigs = slots;
@@ -276,7 +296,7 @@ app.post('/api/admin/config/slots', authorize, async (req, res) => {
     }
 });
 
-app.post('/api/admin/config/accounts', authorize, async (req, res) => {
+app.post('/api/admin/config/accounts', authorizeAdmin, async (req, res) => {
     try {
         const accountsIn = req.body;
         if (!Array.isArray(accountsIn)) return res.status(400).json({ error: "Invalid data format" });
@@ -324,7 +344,7 @@ app.post('/api/admin/config/accounts', authorize, async (req, res) => {
     }
 });
 
-app.get('/api/admin/accounts', authorize, async (req: Request, res: Response) => {
+app.get('/api/admin/accounts', authorizeAdmin, async (req: Request, res: Response) => {
     if (firestore) {
         try {
             const snapshot = await firestore.collection('accounts').get();
@@ -344,14 +364,14 @@ app.get('/api/admin/accounts', authorize, async (req: Request, res: Response) =>
     }
 });
 
-app.get('/api/admin/temporary-riders', authorize, async (req: Request, res: Response) => {
+app.get('/api/admin/temporary-riders', authorizeAdmin, async (req: Request, res: Response) => {
     if (firestore) {
         const snapshot = await firestore.collection('temporaryRiders').get();
         res.json(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } else { res.json([]); }
 });
 
-app.post('/api/admin/temporary-riders', authorize, async (req: Request, res: Response) => {
+app.post('/api/admin/temporary-riders', authorizeAdmin, async (req: Request, res: Response) => {
     const { date, timeSlot, bus, uid, name, badge } = req.body;
     if (!firestore) return res.status(400).json({ error: "Firestore required" });
     try {
@@ -360,7 +380,7 @@ app.post('/api/admin/temporary-riders', authorize, async (req: Request, res: Res
     } catch (err) { res.status(500).json({ error: "Failed to add" }); }
 });
 
-app.delete('/api/admin/temporary-riders/:id', authorize, async (req: Request, res: Response) => {
+app.delete('/api/admin/temporary-riders/:id', authorizeAdmin, async (req: Request, res: Response) => {
     if (firestore) {
         try {
             await firestore.collection('temporaryRiders').doc(req.params.id).delete();
@@ -369,7 +389,7 @@ app.delete('/api/admin/temporary-riders/:id', authorize, async (req: Request, re
     } else { res.status(400).json({ error: "Firestore required" }); }
 });
 
-app.get('/api/admin/bus-occupancy', authorize, async (req: Request, res: Response) => {
+app.get('/api/admin/bus-occupancy', authorizeAdmin, async (req: Request, res: Response) => {
     const { date, timeSlot, bus } = req.query;
     if (!firestore || !date || !timeSlot || !bus) return res.status(400).json({ error: "Missing fields" });
     try {
@@ -383,7 +403,7 @@ app.get('/api/admin/bus-occupancy', authorize, async (req: Request, res: Respons
     } catch (err) { res.status(500).json({ error: "Failed to check" }); }
 });
 
-app.post('/api/admin/config/students', authorize, async (req, res) => {
+app.post('/api/admin/config/students', authorizeAdmin, async (req, res) => {
     const { students, csvType } = req.body;
     const type = csvType || "arrival";
     if (firestore) {
@@ -398,13 +418,13 @@ app.post('/api/admin/config/students', authorize, async (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/admin/config/buses', authorize, async (req, res) => {
+app.post('/api/admin/config/buses', authorizeAdmin, async (req, res) => {
     const { buses, csvType } = req.body;
     if (firestore) await firestore.collection('config').doc(`buses_${csvType || 'arrival'}`).set({ list: buses });
     res.json({ success: true });
 });
 
-app.get('/api/admin/photos', authorize, async (req: Request, res: Response) => {
+app.get('/api/admin/photos', authorizeAdmin, async (req: Request, res: Response) => {
     if (firestore) {
         try {
             const snapshot = await firestore.collection('students').orderBy('name').get();
@@ -418,7 +438,7 @@ app.get('/api/admin/photos', authorize, async (req: Request, res: Response) => {
     } else { res.json([]); }
 });
 
-app.delete('/api/admin/student/photo/:uid', authorize, async (req: Request, res: Response) => {
+app.delete('/api/admin/student/photo/:uid', authorizeAdmin, async (req: Request, res: Response) => {
     if (!firestore) return res.status(400).json({ error: "Firestore required" });
     try {
         const snapshot = await firestore.collection('students').where('uid', '==', req.params.uid).get();
@@ -429,7 +449,7 @@ app.delete('/api/admin/student/photo/:uid', authorize, async (req: Request, res:
     } catch (err) { res.status(500).json({ error: "Failed to delete" }); }
 });
 
-app.post('/api/admin/student/photo', authorize, async (req: Request, res: Response) => {
+app.post('/api/admin/student/photo', authorizeAdmin, async (req: Request, res: Response) => {
     const { uid, photo } = req.body;
     if (!firestore || !uid || !photo) return res.status(400).json({ error: "Missing data" });
     try {
@@ -444,7 +464,7 @@ app.post('/api/admin/student/photo', authorize, async (req: Request, res: Respon
 
 app.get('/api/photo/:uid', async (req: Request, res: Response) => {
     const { token } = req.query;
-    if (token !== AUTH_TOKEN) return res.status(401).send('Unauthorized');
+    if (token !== ADMIN_TOKEN && token !== USER_TOKEN) return res.status(401).send('Unauthorized');
     if (firestore) {
         const snapshot = await firestore.collection('students').where('uid', '==', req.params.uid).limit(1).get();
         if (!snapshot.empty && snapshot.docs[0].data().photo) {
