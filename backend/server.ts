@@ -298,6 +298,7 @@ app.post('/api/admin/config/slots', authorizeAdmin, async (req, res) => {
 
 app.post('/api/admin/config/accounts', authorizeAdmin, async (req, res) => {
     try {
+        const adminUser = req.headers['x-admin-username'] as string;
         const accountsIn = req.body;
         if (!Array.isArray(accountsIn)) return res.status(400).json({ error: "Invalid data format" });
 
@@ -309,7 +310,8 @@ app.post('/api/admin/config/accounts', authorizeAdmin, async (req, res) => {
             const existingIds = snapshot.docs.map(doc => doc.id);
             const newIds = accountsIn.map((a: any) => a.username).filter(Boolean);
             
-            const toDelete = existingIds.filter(id => !newIds.includes(id));
+            // SECURITY: Never delete the currently logged-in user or the 'admin' account
+            const toDelete = existingIds.filter(id => !newIds.includes(id) && id !== adminUser && id !== 'admin');
             toDelete.forEach(id => {
                 batch.delete(firestore!.collection('accounts').doc(id));
             });
@@ -318,6 +320,10 @@ app.post('/api/admin/config/accounts', authorizeAdmin, async (req, res) => {
             accountsIn.forEach((a: any) => {
                 const { username, ...data } = a;
                 if (username) {
+                    // SECURITY: Ensure the currently logged-in user or 'admin' remains an admin
+                    if (username === adminUser || username === 'admin') {
+                        data.type = 'admin';
+                    }
                     batch.set(firestore!.collection('accounts').doc(username), data);
                 }
             });

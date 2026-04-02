@@ -415,6 +415,7 @@
 
         let authToken = localStorage.getItem('adminToken') || '';
         let adminName = localStorage.getItem('adminName') || '管理員';
+        let adminUsername = localStorage.getItem('adminUsername') || '';
         let accounts = [];
         let slotConfigs = [];
         let defaultSlot = { csvType: 'arrival', label: '不在時段內' };
@@ -469,8 +470,10 @@
                     }
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('adminName', data.user.name);
+                    localStorage.setItem('adminUsername', user);
                     authToken = data.token;
                     adminName = data.user.name;
+                    adminUsername = user;
                     showDashboard();
                 } else { error.textContent = data.error || '登入失敗'; }
             } catch (err) { error.textContent = '網路錯誤'; }
@@ -522,12 +525,20 @@
             body.innerHTML = '';
             accounts.forEach((acc, index) => {
                 const tr = document.createElement('tr');
+                const isSelf = acc.username === adminUsername;
                 tr.innerHTML = `
-                    <td>${acc.username}</td>
+                    <td>${acc.username} ${isSelf ? '<span class="badge badge-user" style="font-size: 10px;">(您)</span>' : ''}</td>
                     <td>•••••••• <button class="text-btn" onclick="resetPassword(${index})">重設</button></td>
                     <td><input type="text" value="${acc.name}" onchange="accounts[${index}].name=this.value" class="table-input"></td>
-                    <td><select onchange="accounts[${index}].type=this.value" class="table-input"><option value="user" ${acc.type==='user'?'selected':''}>使用者</option><option value="admin" ${acc.type==='admin'?'selected':''}>管理員</option></select></td>
-                    <td><button class="delete-btn" onclick="accounts.splice(${index},1);renderAccounts()">刪除</button></td>
+                    <td>
+                        <select onchange="accounts[${index}].type=this.value" class="table-input" ${isSelf ? 'disabled' : ''}>
+                            <option value="user" ${acc.type==='user'?'selected':''}>使用者</option>
+                            <option value="admin" ${acc.type==='admin'?'selected':''}>管理員</option>
+                        </select>
+                    </td>
+                    <td>
+                        ${isSelf ? '' : `<button class="delete-btn" onclick="accounts.splice(${index},1);renderAccounts()">刪除</button>`}
+                    </td>
                 `;
                 body.appendChild(tr);
             });
@@ -559,10 +570,13 @@
             try {
                 const res = await fetch(`${BASE_URL}/api/admin/config/accounts`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-Admin-Username': adminUsername
+                    },
                     body: JSON.stringify(accounts)
-                });
-                if (res.ok) { 
+                });                if (res.ok) { 
                     status.textContent = '帳號已成功更新！'; 
                     status.className = 'status-msg success'; 
                     alert('帳號已成功更新！');
