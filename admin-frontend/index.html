@@ -223,7 +223,10 @@
                         <p id="temp-student-info" style="font-size: 12px; margin-top: 5px;"></p>
                     </div>
                     <div class="form-group"><label>學生姓名</label><input type="text" id="temp-name" placeholder="姓名"></div>
-                    <div class="form-group"><label>學號 (選填)</label><input type="text" id="temp-badge" placeholder="學號"></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group"><label>學號 (選填)</label><input type="text" id="temp-badge" placeholder="學號"></div>
+                        <div class="form-group"><label>班級 (選填)</label><input type="text" id="temp-class" placeholder="例如: 301"></div>
+                    </div>
                     
                     <div id="occupancy-info" class="preview-container" style="display: none; margin-bottom: 15px; background: #e1f5fe; color: #01579b; border: none;">
                         <strong>車輛負載:</strong> <span id="occupancy-count">0 / 40</span>
@@ -235,7 +238,7 @@
                     <h3>目前臨時指派列表</h3>
                     <div class="table-container">
                         <table>
-                            <thead><tr><th>日期</th><th>時段</th><th>車次</th><th>學生</th><th>學號</th><th>UID</th><th>操作</th></tr></thead>
+                            <thead><tr><th>日期</th><th>時段</th><th>車次</th><th>學生</th><th>班級</th><th>學號</th><th>UID</th><th>操作</th></tr></thead>
                             <tbody id="temp-riders-body"></tbody>
                         </table>
                     </div>
@@ -696,22 +699,55 @@
         function renderPhotos(photos) {
             const grid = document.getElementById('photo-grid');
             grid.innerHTML = '';
+            
+            // Group photos by class
+            const grouped = {};
             photos.forEach(p => {
-                const url = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
-                const div = document.createElement('div');
-                div.className = 'photo-card';
-                div.innerHTML = `
-                    <div class="photo-card-actions"><button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}','${p.name}')">✕</button></div>
-                    <div class="photo-card-img" onclick="window.open('${url}','_blank')"><img src="${url}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'"></div>
-                    <div class="photo-card-info"><div class="photo-card-name">${p.name}</div><div class="photo-card-uid">${p.uid}</div></div>
+                const cls = p.class || '未分班';
+                if (!grouped[cls]) grouped[cls] = [];
+                grouped[cls].push(p);
+            });
+
+            // Sort classes
+            const classes = Object.keys(grouped).sort();
+
+            classes.forEach(cls => {
+                const section = document.createElement('div');
+                section.style.gridColumn = '1 / -1';
+                section.style.marginTop = '30px';
+                section.innerHTML = `
+                    <h2 style="font-size: 18px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; margin-bottom: 15px; color: var(--text);">
+                        班級: ${cls} <span style="font-size: 13px; font-weight: normal; color: var(--secondary-text);">(${grouped[cls].length} 人)</span>
+                    </h2>
                 `;
-                grid.appendChild(div);
+                grid.appendChild(section);
+
+                grouped[cls].forEach(p => {
+                    const url = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
+                    const div = document.createElement('div');
+                    div.className = 'photo-card';
+                    div.innerHTML = `
+                        <div class="photo-card-actions"><button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}','${p.name}')">✕</button></div>
+                        <div class="photo-card-img" onclick="window.open('${url}','_blank')"><img src="${url}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'"></div>
+                        <div class="photo-card-info">
+                            <div class="photo-card-name">${p.name}</div>
+                            <div class="photo-card-uid">${p.uid}</div>
+                            <div style="font-size: 10px; color: var(--primary); margin-top: 2px;">學號: ${p.badge || '---'}</div>
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                });
             });
         }
 
         function filterPhotos() {
             const q = document.getElementById('photo-search').value.toLowerCase();
-            renderPhotos(allPhotos.filter(p => p.name.toLowerCase().includes(q) || p.uid.includes(q) || (p.badge && p.badge.includes(q))));
+            renderPhotos(allPhotos.filter(p => 
+                p.name.toLowerCase().includes(q) || 
+                p.uid.includes(q) || 
+                (p.badge && p.badge.includes(q)) || 
+                (p.class && p.class.toLowerCase().includes(q))
+            ));
         }
 
         async function deletePhoto(uid, name) {
@@ -788,7 +824,7 @@
 
             riders.filter(r => new Date(r.date) >= cutoff).sort((a,b) => b.date.localeCompare(a.date)).forEach(r => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.date}</td><td>${r.timeSlot}</td><td>${r.bus}</td><td>${r.name}</td><td>${r.badge||'---'}</td><td>${r.uid}</td><td><button class="delete-btn" onclick="deleteTempRider('${r.id}')">刪除</button></td>`;
+                tr.innerHTML = `<td>${r.date}</td><td>${r.timeSlot}</td><td>${r.bus}</td><td>${r.name}</td><td>${r.class||'---'}</td><td>${r.badge||'---'}</td><td>${r.uid}</td><td><button class="delete-btn" onclick="deleteTempRider('${r.id}')">刪除</button></td>`;
                 body.appendChild(tr);
             });
         }
@@ -807,17 +843,20 @@
             const uid = document.getElementById('temp-uid').value.trim();
             const name = document.getElementById('temp-name').value.trim();
             const badge = document.getElementById('temp-badge').value.trim();
+            const studentClass = document.getElementById('temp-class').value.trim();
             if (!date || !slot || !bus || !uid || !name) return alert('請填寫所有必填欄位');
             const res = await fetch(`${BASE_URL}/api/admin/temporary-riders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ date, timeSlot: slot, bus, uid, name, badge })
+                body: JSON.stringify({ date, timeSlot: slot, bus, uid, name, badge, class: studentClass })
             });
             if (res.ok) { 
                 alert('指派成功');
                 fetchTempRiders(); 
                 document.getElementById('temp-uid').value = ''; 
                 document.getElementById('temp-name').value = ''; 
+                document.getElementById('temp-badge').value = '';
+                document.getElementById('temp-class').value = '';
             } else {
                 alert('指派失敗');
             }
@@ -850,6 +889,7 @@
                     info.textContent = `✅ 找到學生: ${s.name}`;
                     document.getElementById('temp-name').value = s.name;
                     document.getElementById('temp-badge').value = s.badge || '';
+                    document.getElementById('temp-class').value = s.class || '';
                 } else { info.textContent = 'ℹ️ 新學生'; }
             } catch (err) {}
         }
@@ -887,6 +927,17 @@
             if (!raw) return;
             const lines = raw.split('\n').filter(l => l.trim());
             const headers = lines[0].split(',').map(h => h.trim().replace(/^\ufeff/, ''));
+
+            // Column validation for students
+            if (type === 'students') {
+                const required = ['uid', 'name', 'badge', 'class'];
+                const missing = required.filter(h => !headers.includes(h));
+                if (missing.length > 0) {
+                    alert(`CSV 格式錯誤。缺少必要欄位: ${missing.join(', ')}\n請確保第一行包含: uid, name, badge, class`);
+                    return;
+                }
+            }
+
             const rows = lines.slice(1).map(l => {
                 const values = l.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
                 let obj = {}; headers.forEach((h, i) => obj[h] = values[i]);
@@ -904,6 +955,7 @@
                     body: JSON.stringify(payload)
                 });
                 if (res.ok) { alert('上傳成功'); location.reload(); }
+                else { const data = await res.json(); alert(`上傳失敗: ${data.error || '未知錯誤'}`); }
             } catch (err) { alert('上傳失敗'); }
             finally { btn.disabled = false; }
         }

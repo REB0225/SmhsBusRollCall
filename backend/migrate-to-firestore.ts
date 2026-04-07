@@ -61,6 +61,7 @@ async function migrate() {
             uid: record.uid,
             name: record.name,
             badge: record.badge,
+            class: record.class || "",
             bus: record.bus || "",
             listType: 'arrival'
         });

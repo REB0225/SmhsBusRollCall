@@ -84,6 +84,7 @@ interface Student {
   uid: string;
   name: string;
   badge: string;
+  class?: string;
   bus?: string;
   listType?: string;
   photo?: string;
@@ -378,10 +379,10 @@ app.get('/api/admin/temporary-riders', authorizeAdmin, async (req: Request, res:
 });
 
 app.post('/api/admin/temporary-riders', authorizeAdmin, async (req: Request, res: Response) => {
-    const { date, timeSlot, bus, uid, name, badge } = req.body;
+    const { date, timeSlot, bus, uid, name, badge, class: studentClass } = req.body;
     if (!firestore) return res.status(400).json({ error: "Firestore required" });
     try {
-        await firestore.collection('temporaryRiders').add({ date, timeSlot, bus, uid, name, badge: badge || "---" });
+        await firestore.collection('temporaryRiders').add({ date, timeSlot, bus, uid, name, badge: badge || "---", class: studentClass || "" });
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: "Failed to add" }); }
 });
@@ -437,7 +438,7 @@ app.get('/api/admin/photos', authorizeAdmin, async (req: Request, res: Response)
             const photos: any[] = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.photo) photos.push({ uid: data.uid, name: data.name, badge: data.badge });
+                if (data.photo) photos.push({ uid: data.uid, name: data.name, badge: data.badge, class: data.class });
             });
             res.json(photos);
         } catch (err) { res.status(500).json({ error: "Failed to fetch photos" }); }

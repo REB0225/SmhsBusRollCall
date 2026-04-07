@@ -10,6 +10,7 @@ interface Student {
   uid: string;
   name: string;
   badge: string;
+  class?: string;
   bus?: string;
   photo?: string;
 }
@@ -19,6 +20,7 @@ interface PendingRecord {
   timestamp: string;
   name: string;
   badge: string;
+  class?: string;
   selectedBusAtTimeOfScan: string;
   studentBus: string;
 }
@@ -270,19 +272,20 @@ class App {
     // 1. Resolve student from local cache ONLY for instant response
     const student = this.allStudents[uid];
     
-    this.currentStudent = student || { uid, name: "未知標籤", badge: "---", bus: "未知" };
+    this.currentStudent = student || { uid, name: "未知標籤", badge: "---", class: "---", bus: "未知" };
     
     // 2. Update UI
     this.displayStudent(this.currentStudent);
     this.updateUIColors();
 
     // 3. Auto Record logic
-    this.addPendingRecord(uid, this.currentStudent.name, this.currentStudent.badge || "---", this.currentStudent.bus || "未知");
+    this.addPendingRecord(uid, this.currentStudent.name, this.currentStudent.badge || "---", this.currentStudent.class || "---", this.currentStudent.bus || "未知");
   }
 
   private displayStudent(s: Student) {
     (document.getElementById('student-name')!).textContent = s.name;
     (document.getElementById('student-badge')!).textContent = s.badge;
+    (document.getElementById('student-class')!).textContent = s.class || "---";
     (document.getElementById('student-uid')!).textContent = s.uid;
     (document.getElementById('student-bus')!).textContent = s.bus || '未指派車次';
 
@@ -336,12 +339,12 @@ class App {
     }
   }
 
-  private addPendingRecord(uid: string, name: string, badge: string, studentBus: string) {
+  private addPendingRecord(uid: string, name: string, badge: string, studentClass: string, studentBus: string) {
     const timestamp = new Date().toISOString();
     const selectedBusAtTimeOfScan = this.busSelect.value;
     // Avoid duplicate UIDs in the same session
     if (!this.pendingRollCalls.some(r => r.uid === uid)) {
-        this.pendingRollCalls.push({ uid, timestamp, name, badge, studentBus, selectedBusAtTimeOfScan });
+        this.pendingRollCalls.push({ uid, timestamp, name, badge, class: studentClass, studentBus, selectedBusAtTimeOfScan });
         this.updatePendingUI();
     }
   }
@@ -432,7 +435,7 @@ class App {
                 <h4 style="display: flex; align-items: center; gap: 8px; margin: 0;">
                     ${record.name} ${badgeHtml}
                 </h4>
-                <p style="margin: 4px 0;">學號: ${record.badge} | UID: ${record.uid}</p>
+                <p style="margin: 4px 0;">班級: ${record.class || '---'} | 學號: ${record.badge} | UID: ${record.uid}</p>
                 <p style="font-size: 11px; color: #666; margin: 0;">原定車次: ${record.studentBus} | 掃描車次: ${record.selectedBusAtTimeOfScan}</p>
                 <div style="font-size: 10px; color: #999; margin-top: 4px; display: flex; gap: 8px;">
                     <span>📅 ${new Date(record.timestamp).toLocaleDateString()}</span>
