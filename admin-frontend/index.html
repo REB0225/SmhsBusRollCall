@@ -704,7 +704,7 @@
             grid.innerHTML = '';
             
             if (currentPhotoFolder === null) {
-                // Render folder view
+                // Folder View
                 const grouped = {};
                 photos.forEach(p => {
                     const cls = p.class || '未分班';
@@ -716,10 +716,11 @@
                 classes.forEach(cls => {
                     const folder = document.createElement('div');
                     folder.className = 'photo-card';
-                    folder.style.cursor = 'pointer';
-                    folder.onclick = () => { currentPhotoFolder = cls; renderPhotos(photos); };
                     folder.innerHTML = `
-                        <div class="photo-card-img" style="background: #e3f2fd; flex-direction: column; gap: 10px;">
+                        <div class="photo-card-actions">
+                            <button class="photo-action-btn delete" title="批量刪除此目錄所有相片" onclick="event.stopPropagation(); deleteFolderPhotos('${cls}')">✕</button>
+                        </div>
+                        <div class="photo-card-img" style="background: #e3f2fd; flex-direction: column; gap: 10px; cursor: pointer;" onclick="currentPhotoFolder = '${cls}'; renderPhotos(allPhotos);">
                             <svg width="60" height="60" viewBox="0 0 24 24" fill="#1976d2"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
                             <span style="font-weight: 600; color: #1976d2;">${cls}</span>
                         </div>
@@ -730,33 +731,31 @@
                     grid.appendChild(folder);
                 });
             } else {
-                // Render class view
+                // Class View
                 const classPhotos = photos.filter(p => (p.class || '未分班') === currentPhotoFolder);
                 
-                // Back button card
-                const backBtn = document.createElement('div');
-                backBtn.className = 'photo-card';
-                backBtn.style.cursor = 'pointer';
-                backBtn.onclick = () => { currentPhotoFolder = null; renderPhotos(photos); };
-                backBtn.innerHTML = `
-                    <div class="photo-card-img" style="background: #f5f5f7; flex-direction: column; gap: 10px;">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="#666"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-                        <span style="font-weight: 600; color: #666;">返回目錄</span>
+                const header = document.createElement('div');
+                header.style.gridColumn = '1 / -1';
+                header.style.display = 'flex';
+                header.style.justifyContent = 'space-between';
+                header.style.alignItems = 'center';
+                header.style.marginBottom = '15px';
+                header.style.background = '#f5f5f7';
+                header.style.padding = '10px 15px';
+                header.style.borderRadius = '10px';
+                header.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button class="secondary-btn" style="width: auto; margin: 0; padding: 5px 10px;" onclick="currentPhotoFolder = null; renderPhotos(allPhotos);">← 返回</button>
+                        <h2 style="font-size: 16px; color: var(--text); margin: 0;">目錄: ${currentPhotoFolder} (${classPhotos.length})</h2>
                     </div>
+                    <button class="delete-btn" style="font-weight: 600; font-size: 12px;" onclick="deleteFolderPhotos('${currentPhotoFolder}')">批量刪除此目錄相片</button>
                 `;
-                grid.appendChild(backBtn);
-
-                const title = document.createElement('div');
-                title.style.gridColumn = '1 / -1';
-                title.style.marginBottom = '10px';
-                title.innerHTML = `<h2 style="font-size: 18px; color: var(--text);">目前目錄: ${currentPhotoFolder}</h2>`;
-                grid.insertBefore(title, backBtn);
+                grid.appendChild(header);
 
                 classPhotos.forEach(p => {
                     const url = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
                     const div = document.createElement('div');
                     div.className = 'photo-card';
-                    // Lazy load trick: Render card frame and name immediately, image follows
                     div.innerHTML = `
                         <div class="photo-card-actions"><button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}','${p.name}')">✕</button></div>
                         <div class="photo-card-img" onclick="window.open('${url}','_blank')">
@@ -786,7 +785,31 @@
         async function deletePhoto(uid, name) {
             if (confirm(`確定要刪除 ${name} 的相片嗎？`)) {
                 const res = await fetch(`${BASE_URL}/api/admin/student/photo/${uid}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
-                if (res.ok) { allPhotos = allPhotos.filter(p => p.uid !== uid); renderPhotos(allPhotos); }
+                if (res.ok) { 
+                    allPhotos = allPhotos.filter(p => p.uid !== uid); 
+                    const q = document.getElementById('photo-search').value.toLowerCase();
+                    renderPhotos(allPhotos.filter(p => 
+                        p.name.toLowerCase().includes(q) || 
+                        p.uid.includes(q) || 
+                        (p.badge && p.badge.includes(q)) || 
+                        (p.class && p.class.toLowerCase().includes(q))
+                    ));
+                }
+            }
+        }
+
+        async function deleteFolderPhotos(className) {
+            if (confirm(`⚠️ 警告：確定要刪除「${className}」目錄下的所有相片嗎？此動作無法復原。`)) {
+                try {
+                    const res = await fetch(`${BASE_URL}/api/admin/class/photos/${encodeURIComponent(className)}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    if (res.ok) {
+                        alert('已刪除該目錄下的所有相片。');
+                        fetchPhotos();
+                    } else { alert('刪除失敗'); }
+                } catch (err) { alert('網路錯誤'); }
             }
         }
 

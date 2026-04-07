@@ -456,6 +456,51 @@ app.delete('/api/admin/student/photo/:uid', authorizeAdmin, async (req: Request,
     } catch (err) { res.status(500).json({ error: "Failed to delete" }); }
 });
 
+app.delete('/api/admin/class/photos/:className', authorizeAdmin, async (req: Request, res: Response) => {
+    if (!firestore) return res.status(400).json({ error: "Firestore required" });
+    try {
+        const className = req.params.className === '未分班' ? null : req.params.className;
+        
+        // Find all students in this class that have a photo
+        let query = firestore.collection('students').where('photo', '!=', null);
+        
+        if (className === null) {
+            // Handle null/missing class (might require multiple queries depending on firestore structure)
+            // For simplicity in this schema, we'll fetch then filter or use multiple where
+            const snapshot = await firestore.collection('students').get();
+            const batch = firestore.batch();
+            let count = 0;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if ((!data.class || data.class === '') && data.photo) {
+                    batch.update(doc.ref, { photo: admin.firestore.FieldValue.delete() });
+                    count++;
+                }
+            });
+            if (count > 0) await batch.commit();
+            return res.json({ success: true, count });
+        } else {
+            const snapshot = await firestore.collection('students')
+                .where('class', '==', className)
+                .get();
+            
+            const batch = firestore.batch();
+            let count = 0;
+            snapshot.forEach(doc => {
+                if (doc.data().photo) {
+                    batch.update(doc.ref, { photo: admin.firestore.FieldValue.delete() });
+                    count++;
+                }
+            });
+            if (count > 0) await batch.commit();
+            res.json({ success: true, count });
+        }
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json({ error: "Failed to bulk delete photos" }); 
+    }
+});
+
 app.post('/api/admin/student/photo', authorizeAdmin, async (req: Request, res: Response) => {
     const { uid, photo } = req.body;
     if (!firestore || !uid || !photo) return res.status(400).json({ error: "Missing data" });
