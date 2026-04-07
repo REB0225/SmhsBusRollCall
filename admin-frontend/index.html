@@ -356,6 +356,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                         <div>
                             <h3>學生名單上傳</h3>
+                            <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 10px;">必要欄位: <strong>uid, name, badge, class, bus</strong></p>
                             <div class="form-group">
                                 <label>目標名單</label>
                                 <select id="student-list-type" class="table-input" onchange="resetStudentPreview()">
@@ -375,6 +376,7 @@
                         </div>
                         <div>
                             <h3>車次名單上傳</h3>
+                            <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 10px;">必要欄位: <strong>bus, overflow</strong></p>
                             <div class="form-group">
                                 <label>目標車次列表</label>
                                 <select id="bus-list-type" class="table-input" onchange="resetBusPreview()">
@@ -423,6 +425,7 @@
         let slotConfigs = [];
         let defaultSlot = { csvType: 'arrival', label: '不在時段內' };
         let allPhotos = [];
+        let currentPhotoFolder = null;
         let allStudentsList = [];
         let parsedData = { students: null, buses: null };
 
@@ -700,35 +703,65 @@
             const grid = document.getElementById('photo-grid');
             grid.innerHTML = '';
             
-            // Group photos by class
-            const grouped = {};
-            photos.forEach(p => {
-                const cls = p.class || '未分班';
-                if (!grouped[cls]) grouped[cls] = [];
-                grouped[cls].push(p);
-            });
+            if (currentPhotoFolder === null) {
+                // Render folder view
+                const grouped = {};
+                photos.forEach(p => {
+                    const cls = p.class || '未分班';
+                    if (!grouped[cls]) grouped[cls] = [];
+                    grouped[cls].push(p);
+                });
 
-            // Sort classes
-            const classes = Object.keys(grouped).sort();
-
-            classes.forEach(cls => {
-                const section = document.createElement('div');
-                section.style.gridColumn = '1 / -1';
-                section.style.marginTop = '30px';
-                section.innerHTML = `
-                    <h2 style="font-size: 18px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; margin-bottom: 15px; color: var(--text);">
-                        班級: ${cls} <span style="font-size: 13px; font-weight: normal; color: var(--secondary-text);">(${grouped[cls].length} 人)</span>
-                    </h2>
+                const classes = Object.keys(grouped).sort();
+                classes.forEach(cls => {
+                    const folder = document.createElement('div');
+                    folder.className = 'photo-card';
+                    folder.style.cursor = 'pointer';
+                    folder.onclick = () => { currentPhotoFolder = cls; renderPhotos(photos); };
+                    folder.innerHTML = `
+                        <div class="photo-card-img" style="background: #e3f2fd; flex-direction: column; gap: 10px;">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="#1976d2"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                            <span style="font-weight: 600; color: #1976d2;">${cls}</span>
+                        </div>
+                        <div class="photo-card-info" style="text-align: center;">
+                            <div class="photo-card-name">${grouped[cls].length} 張相片</div>
+                        </div>
+                    `;
+                    grid.appendChild(folder);
+                });
+            } else {
+                // Render class view
+                const classPhotos = photos.filter(p => (p.class || '未分班') === currentPhotoFolder);
+                
+                // Back button card
+                const backBtn = document.createElement('div');
+                backBtn.className = 'photo-card';
+                backBtn.style.cursor = 'pointer';
+                backBtn.onclick = () => { currentPhotoFolder = null; renderPhotos(photos); };
+                backBtn.innerHTML = `
+                    <div class="photo-card-img" style="background: #f5f5f7; flex-direction: column; gap: 10px;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="#666"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        <span style="font-weight: 600; color: #666;">返回目錄</span>
+                    </div>
                 `;
-                grid.appendChild(section);
+                grid.appendChild(backBtn);
 
-                grouped[cls].forEach(p => {
+                const title = document.createElement('div');
+                title.style.gridColumn = '1 / -1';
+                title.style.marginBottom = '10px';
+                title.innerHTML = `<h2 style="font-size: 18px; color: var(--text);">目前目錄: ${currentPhotoFolder}</h2>`;
+                grid.insertBefore(title, backBtn);
+
+                classPhotos.forEach(p => {
                     const url = `${BASE_URL}/api/photo/${p.uid}?token=${authToken}&t=${Date.now()}`;
                     const div = document.createElement('div');
                     div.className = 'photo-card';
+                    // Lazy load trick: Render card frame and name immediately, image follows
                     div.innerHTML = `
                         <div class="photo-card-actions"><button class="photo-action-btn delete" onclick="deletePhoto('${p.uid}','${p.name}')">✕</button></div>
-                        <div class="photo-card-img" onclick="window.open('${url}','_blank')"><img src="${url}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'"></div>
+                        <div class="photo-card-img" onclick="window.open('${url}','_blank')">
+                            <img loading="lazy" src="${url}" onload="this.style.opacity=1" style="opacity: 0; transition: opacity 0.5s;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random'; this.style.opacity=1">
+                        </div>
                         <div class="photo-card-info">
                             <div class="photo-card-name">${p.name}</div>
                             <div class="photo-card-uid">${p.uid}</div>
@@ -737,7 +770,7 @@
                     `;
                     grid.appendChild(div);
                 });
-            });
+            }
         }
 
         function filterPhotos() {
@@ -928,12 +961,19 @@
             const lines = raw.split('\n').filter(l => l.trim());
             const headers = lines[0].split(',').map(h => h.trim().replace(/^\ufeff/, ''));
 
-            // Column validation for students
+            // Column validation
             if (type === 'students') {
-                const required = ['uid', 'name', 'badge', 'class'];
+                const required = ['uid', 'name', 'badge', 'class', 'bus'];
                 const missing = required.filter(h => !headers.includes(h));
                 if (missing.length > 0) {
-                    alert(`CSV 格式錯誤。缺少必要欄位: ${missing.join(', ')}\n請確保第一行包含: uid, name, badge, class`);
+                    alert(`學生 CSV 格式錯誤。缺少必要欄位: ${missing.join(', ')}\n請確保第一行包含: uid, name, badge, class, bus`);
+                    return;
+                }
+            } else if (type === 'buses') {
+                const required = ['bus', 'overflow'];
+                const missing = required.filter(h => !headers.includes(h));
+                if (missing.length > 0) {
+                    alert(`車次 CSV 格式錯誤。缺少必要欄位: ${missing.join(', ')}\n請確保第一行包含: bus, overflow`);
                     return;
                 }
             }
@@ -944,7 +984,7 @@
                 return obj;
             });
             const csvType = document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`).value;
-            const payload = type === 'students' ? { students: rows, csvType } : { buses: rows.map(r => ({ name: r.bus || Object.values(r)[0], overflow: parseInt(r.overflow) || 40 })), csvType };
+            const payload = type === 'students' ? { students: rows, csvType } : { buses: rows.map(r => ({ name: r.bus, overflow: parseInt(r.overflow) || 40 })), csvType };
             
             const btn = document.getElementById(`upload-${type}`);
             btn.disabled = true;
