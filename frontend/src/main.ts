@@ -311,6 +311,13 @@ class App {
     } catch (e) {}
   }
 
+  private isBusMatch(studentBus: string | undefined, selectedBus: string): boolean {
+    if (!studentBus || !selectedBus) return false;
+    // Handle multiple buses separated by '/'
+    const buses = studentBus.split('/').map(b => b.trim());
+    return buses.includes(selectedBus);
+  }
+
   private updateUIColors() {
     const s = this.currentStudent;
     const bus = this.busSelect.value;
@@ -328,7 +335,7 @@ class App {
         document.body.className = 'red-bg';
         msgEl.textContent = "資料庫中無此標籤";
         msgEl.style.color = "white";
-    } else if (s.bus === bus) {
+    } else if (this.isBusMatch(s.bus, bus)) {
         document.body.className = 'green-bg';
         msgEl.textContent = "符合所選車次";
         msgEl.style.color = "white";
@@ -420,7 +427,7 @@ class App {
         if (record.name === "未知標籤") {
             badgeHtml = '<span class="badge badge-unknown">未知</span>';
             unknownCount++;
-        } else if (record.studentBus === currentBus) {
+        } else if (this.isBusMatch(record.studentBus, currentBus)) {
             badgeHtml = '<span class="badge badge-ready">就緒</span>';
             readyCount++;
         } else {
@@ -476,7 +483,7 @@ class App {
     if (this.isSyncing || this.pendingRollCalls.length === 0) return;
 
     const currentBus = this.reviewBusSelect.value;
-    const recordsToSync = this.pendingRollCalls.filter(r => r.studentBus === currentBus && r.name !== "未知標籤");
+    const recordsToSync = this.pendingRollCalls.filter(r => this.isBusMatch(r.studentBus, currentBus) && r.name !== "未知標籤");
     
     if (recordsToSync.length === 0) {
         alert(`沒有可同步至 ${currentBus} 的有效記錄。`);

@@ -400,14 +400,137 @@ app.get('/api/admin/bus-occupancy', authorizeAdmin, async (req: Request, res: Re
     const { date, timeSlot, bus } = req.query;
     if (!firestore || !date || !timeSlot || !bus) return res.status(400).json({ error: "Missing fields" });
     try {
-        const configDoc = await firestore.collection('config').doc(`buses_arrival`).get();
+        const busStr = bus as string;
+        const matchingConfig = slotConfigs.find(s => `${s.start}-${s.end}` === timeSlot) || slotConfigs.find(s => s.label === timeSlot);
+        const csvType = matchingConfig?.csvType || "arrival";
+
+        // Get bus limit
+        const configDoc = await firestore.collection('config').doc(`buses_${csvType}`).get();
         const busList = configDoc.data()?.list || [];
-        const busObj = busList.find((b: any) => (b.name || b) === bus);
+        const busObj = busList.find((b: any) => (b.name || b.bus) === busStr);
         const limit = busObj?.overflow || 40;
-        const students = await firestore.collection('students').where('bus', '==', bus).get();
-        const temps = await firestore.collection('temporaryRiders').where('date', '==', date).where('timeSlot', '==', timeSlot).where('bus', '==', bus).get();
-        res.json({ count: students.size + temps.size, overflowLimit: limit });
-    } catch (err) { res.status(500).json({ error: "Failed to check" }); }
+
+        // Fetch all students for this list type and filter locally to support multi-bus strings
+        const studentsSnapshot = await firestore.collection('students').where('listType', '==', csvType).get();
+        let count = 0;
+        studentsSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.bus) {
+                const buses = (data.bus as string).split('/').map(b => b.trim());
+                if (buses.includes(busStr)) count++;
+            }
+        });
+
+        // Add temporary riders
+        const temps = await firestore.collection('temporaryRiders')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('bus', '==', busStr)
+            .get();
+        
+        res.json({ count: count + temps.size, overflowLimit: limit });
+    } catch (err) { res.status(500).json({ error: "Failed to check occupancy" }); }
+});
+
+app.get('/api/admin/rollcall-csv', authorizeAdmin, async (req, res) => {
+    const { date, timeSlot } = req.query;
+    if (!firestore || !date || !timeSlot) return res.status(400).json({ error: "Missing date or slot" });
+
+    try {
+        const dateStr = date as string;
+        const slotStr = timeSlot as string;
+        const { students, csvType } = await getStudentsForSlot(slotStr);
+        
+        // Fetch rollcall records from multiple possible collection names for compatibility
+        const collections = ['rollcalls', 'RollCall', 'Rollcall'];
+        let records: any[] = [];
+        
+        for (const collName of collections) {
+            const snapshot = await firestore.collection(collName)
+                .where('date', '==', dateStr)
+                .where('timeSlot', '==', slotStr)
+                .get();
+            if (!snapshot.empty) {
+                records = [...records, ...snapshot.docs.map(doc => doc.data())];
+            }
+        }
+        
+        // Remove duplicates if any (by uid)
+        const uniqueRecords = Array.from(new Map(records.map(r => [r.uid, r])).values());
+        
+        // Generate CSV
+        let csv = '\uFEFFuid,name,badge,class,assigned_bus,status,timestamp\n';
+        students.forEach((s: any) => {
+            const record = uniqueRecords.find(r => r.uid === s.uid);
+            const status = record ? '已簽到' : '未到';
+            const time = record ? new Date(record.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '---';
+            csv += `${s.uid},${s.name},${s.badge},${s.class || ''},"${s.bus || ''}",${status},${time}\n`;
+        });
+
+        // Add extra records (temporary or unknown) not in the main list
+        uniqueRecords.forEach(r => {
+            if (!students.some((s: any) => s.uid === r.uid)) {
+                const time = new Date(r.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+                csv += `${r.uid},未知/臨時,,,,,已簽到,${time}\n`;
+            }
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="rollcall-${dateStr}.csv"`);
+        res.send(csv);
+    } catch (err) { res.status(500).json({ error: "Failed to generate CSV" }); }
+});
+
+app.get('/api/admin/rollcall-week', authorizeAdmin, async (req, res) => {
+    const { startDate, endDate } = req.query;
+    if (!firestore || !startDate || !endDate) return res.status(400).json({ error: "Missing date range" });
+
+    try {
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        const files: Record<string, string> = {};
+
+        // Loop through each day in the range
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            
+            // For each day, generate CSVs for all relevant slots
+            const dayOfWeek = d.getDay();
+            const relevantSlots = slotConfigs.filter(s => {
+                return (s.day === undefined && s.days === undefined) || 
+                       (s.day !== undefined && s.day === dayOfWeek) || 
+                       (s.days !== undefined && s.days.includes(dayOfWeek));
+            });
+
+            for (const slot of relevantSlots) {
+                const slotLabel = `${slot.start}-${slot.end}`;
+                const { students } = await getStudentsForSlot(slotLabel);
+                
+                // Fetch from multiple collections
+                const collections = ['rollcalls', 'RollCall', 'Rollcall'];
+                let records: any[] = [];
+                for (const collName of collections) {
+                    const snapshot = await firestore.collection(collName)
+                        .where('date', '==', dateStr)
+                        .where('timeSlot', '==', slotLabel)
+                        .get();
+                    if (!snapshot.empty) {
+                        records = [...records, ...snapshot.docs.map(doc => doc.data())];
+                    }
+                }
+                const uniqueRecords = Array.from(new Map(records.map(r => [r.uid, r])).values());
+                
+                let csv = '\uFEFFuid,name,badge,class,assigned_bus,status,timestamp\n';
+                students.forEach((s: any) => {
+                    const record = uniqueRecords.find(r => r.uid === s.uid);
+                    csv += `${s.uid},${s.name},${s.badge},${s.class || ''},"${s.bus || ''}",${record ? '已簽到' : '未到'},${record ? new Date(record.timestamp).toISOString() : ''}\n`;
+                });
+
+                files[`rollcall-${dateStr}-${slot.label}.csv`] = csv;
+            }
+        }
+        res.json({ files });
+    } catch (err) { res.status(500).json({ error: "Failed to generate week report" }); }
 });
 
 app.post('/api/admin/config/students', authorizeAdmin, async (req, res) => {
@@ -580,14 +703,37 @@ const getTimeSlotInfo = (dateObj: Date = new Date()) => {
     const taipeiTime = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
     const currentTimeStr = `${taipeiTime.getHours().toString().padStart(2, '0')}:${taipeiTime.getMinutes().toString().padStart(2, '0')}`;
     const day = taipeiTime.getDay();
-    const specific = slotConfigs.find(s => {
-        const matchDay = (s.day !== undefined && s.day === day) || (s.days !== undefined && s.days.includes(day));
+
+    // Filter all currently matching slots
+    const matches = slotConfigs.filter(s => {
+        const matchDay = (s.day === undefined && s.days === undefined) || 
+                        (s.day !== undefined && s.day === day) || 
+                        (s.days !== undefined && s.days.includes(day));
         return matchDay && currentTimeStr >= s.start && currentTimeStr < s.end;
     });
-    if (specific) return specific;
-    const general = slotConfigs.find(s => s.day === undefined && s.days === undefined && currentTimeStr >= s.start && currentTimeStr < s.end);
-    if (general) return general;
-    return { ...defaultSlot, start: "00:00", end: "23:59" };
+
+    if (matches.length === 0) {
+        return { ...defaultSlot, start: "00:00", end: "23:59" };
+    }
+
+    // Prioritize:
+    // 1. isTemp: true (Temporary overrides)
+    // 2. Specificity (day/days defined over "every day")
+    return matches.sort((a, b) => {
+        // Priority 1: Temporary vs Permanent
+        const aTemp = !!a.isTemp;
+        const bTemp = !!b.isTemp;
+        if (aTemp && !bTemp) return -1;
+        if (!aTemp && bTemp) return 1;
+
+        // Priority 2: Specific Day(s) vs General
+        const aSpecific = a.day !== undefined || a.days !== undefined;
+        const bSpecific = b.day !== undefined || b.days !== undefined;
+        if (aSpecific && !bSpecific) return -1;
+        if (!aSpecific && bSpecific) return 1;
+
+        return 0;
+    })[0];
 };
 
 const getTimeSlot = (dateObj: Date = new Date()) => {
