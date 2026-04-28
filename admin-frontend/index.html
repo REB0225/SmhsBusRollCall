@@ -337,7 +337,18 @@
                             <tbody id="slots-body"></tbody>
                             <tfoot>
                                 <tr style="background: #fbfbfd; border-top: 2px solid #eee;">
-                                    <td><select id="new-slot-day" class="table-input"><option value="">每天</option><option value="group:1,2,3,4">一至四</option><option value="5">週五</option></select></td>
+                                    <td><select id="new-slot-day" class="table-input">
+                                        <option value="">每天</option>
+                                        <option value="1">週一</option>
+                                        <option value="2">週二</option>
+                                        <option value="3">週三</option>
+                                        <option value="4">週四</option>
+                                        <option value="5">週五</option>
+                                        <option value="6">週六</option>
+                                        <option value="0">週日</option>
+                                        <option value="group:1,2,3,4">週一至四</option>
+                                        <option value="group:1,2,3,4,5">週一至五</option>
+                                    </select></td>
                                     <td><input type="text" id="new-slot-start" placeholder="07:00" class="table-input"></td>
                                     <td><input type="text" id="new-slot-end" placeholder="09:00" class="table-input"></td>
                                     <td><select id="new-slot-csv" class="table-input"><option value="arrival">早上</option><option value="full_departure">下午</option></select></td>
@@ -514,7 +525,7 @@
                 targetContent.classList.add('active');
             }
 
-            if (tabName === 'temp-riders') { fetchTempRiders(); populateSelectors(); }
+            if (tabName === 'temp-riders') { fetchTempRiders(); fetchBusesForTemp(); }
             if (tabName === 'photos') { fetchPhotos(); }
             if (tabName === 'config') { fetchAccounts(); fetchSlots(); }
         }
@@ -610,8 +621,48 @@
                     document.getElementById('default-slot-csv').value = defaultSlot.csvType;
                     document.getElementById('default-slot-label').value = defaultSlot.label;
                     renderSlots();
+                    updateSlotSelectors();
                 }
             } catch (err) { console.error(err); }
+        }
+
+        function updateSlotSelectors() {
+            const exportSelect = document.getElementById('slotPicker');
+            const tempSelect = document.getElementById('temp-slot');
+            
+            // Collect unique slots
+            const uniqueSlots = new Set();
+            slotConfigs.forEach(s => {
+                uniqueSlots.add(`${s.start}-${s.end}`);
+            });
+            uniqueSlots.add(defaultSlot.label);
+
+            const options = Array.from(uniqueSlots).map(s => {
+                const label = slotConfigs.find(sc => `${sc.start}-${sc.end}` === s)?.label || s;
+                return { value: s, label: label === s ? s : `${label} (${s})` };
+            });
+
+            // Update Export Selector
+            if (exportSelect) {
+                exportSelect.innerHTML = '';
+                options.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.textContent = opt.label;
+                    exportSelect.appendChild(o);
+                });
+            }
+
+            // Update Temp Rider Selector
+            if (tempSelect) {
+                tempSelect.innerHTML = '';
+                options.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.textContent = opt.label;
+                    tempSelect.appendChild(o);
+                });
+            }
         }
 
         function renderSlots() {
@@ -916,14 +967,6 @@
             } else {
                 alert('指派失敗');
             }
-        }
-
-        function populateSelectors() {
-            const slots = ["07:00-09:00", "16:00-18:00", "19:00-21:00", "Not in time"];
-            const sSelect = document.getElementById('temp-slot');
-            sSelect.innerHTML = '';
-            slots.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sSelect.appendChild(opt); });
-            fetchBusesForTemp();
         }
 
         async function fetchBusesForTemp() {

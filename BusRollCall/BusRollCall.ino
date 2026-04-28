@@ -10,11 +10,11 @@
 #include <BLE2902.h>
 
 // ESP32-C3 SuperMini Pinout
-#define SS_PIN    21
-#define SCK_PIN   20
-#define MOSI_PIN  10
-#define MISO_PIN  9
-#define RST_PIN   6
+#define SS_PIN    5
+#define SCK_PIN   6
+#define MOSI_PIN  7
+#define MISO_PIN  8
+#define RST_PIN   20
 #define BATTERY_PIN 3
 #define BUZZER_PIN  1
 
@@ -46,9 +46,9 @@ class MyServerCallbacks: public BLEServerCallbacks {
 };
 
 void beep(int duration) {
-  digitalWrite(BUZZER_PIN, HIGH);
+  tone(BUZZER_PIN, 2000);
   delay(duration);
-  digitalWrite(BUZZER_PIN, LOW);
+  noTone(BUZZER_PIN);
 }
 
 int getBatteryLevel() {
