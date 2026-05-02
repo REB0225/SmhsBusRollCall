@@ -355,7 +355,7 @@ class App {
     if (!bus) { 
         document.body.className = 'purple-bg'; 
         msgEl.textContent = "請先選擇車次";
-        msgEl.style.color = "gray";
+        msgEl.style.color = "black";
         return; 
     }
 

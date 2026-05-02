@@ -434,6 +434,10 @@ footer {
   margin: 0 auto 15px;
 }
 
+.content-text {
+  color: var(--text-black);
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
