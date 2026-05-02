@@ -315,7 +315,6 @@ class App {
 
     const photoEl = document.getElementById('student-photo') as HTMLImageElement;
     if (s.badge !== "---") {
-        photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
         this.fetchPhotoSecure(s.uid);
     } else {
         photoEl.src = `https://ui-avatars.com/api/?name=?&background=random`;
