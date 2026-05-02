@@ -256,7 +256,9 @@ class App {
         batChar.addEventListener('characteristicvaluechanged', (e: any) => updateBat(e.target.value));
         await batChar.startNotifications();
         updateBat(await batChar.readValue());
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Battery service unavailable:', e); // ← add this
+      }
 
       this.isConnected = true;
       this.updateDisconnectBtn();

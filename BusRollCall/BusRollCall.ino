@@ -120,7 +120,13 @@ void loop() {
   // Handle new connection
   if (deviceConnected && !oldDeviceConnected) {
     oldDeviceConnected = deviceConnected;
-    beep(200); // Connection beep
+    beep(200);
+
+    // Send battery level immediately so the client gets it on readValue()
+    uint8_t level = getBatteryLevel();
+    pBatteryCharacteristic->setValue(&level, 1);
+    pBatteryCharacteristic->notify();
+    lastBatteryUpdate = millis(); // reset the 30s timer from now
   }
 
   if (deviceConnected && (millis() - lastBatteryUpdate > 30000)) {
