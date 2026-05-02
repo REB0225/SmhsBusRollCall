@@ -89,8 +89,15 @@ class App {
   }
 
   private initEventListeners() {
-    // Login
+    // Login,Logout
     document.getElementById('login-btn')?.addEventListener('click', () => this.handleLogin());
+    document.getElementById('logout-btn')?.addEventListener('click', () => {
+      if (this.pendingRollCalls.length > 0) {
+        const confirm = window.confirm(`尚有 ${this.pendingRollCalls.length} 筆未同步記錄，確定要登出嗎？`);
+        if (!confirm) return;
+      }
+      this.logout();
+    });
 
     // Scanner
     document.getElementById('connect-ble-btn')?.addEventListener('click', () => this.connectScanner());
@@ -539,6 +546,18 @@ class App {
     if (!navigator.bluetooth) {
         document.getElementById('status-message-ready')!.textContent = "⚠️ 瀏覽器不支援 Web Bluetooth (請使用 Chrome/Edge)";
     }
+  }
+
+  private logout() {
+    if (this.isConnected) {
+        this.bleDevice?.gatt?.disconnect();
+    }
+    this.authToken = null;
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('pendingRollCalls');
+    this.pendingRollCalls = [];
+    this.mainView.style.display = 'none';
+    this.loginView.style.display = 'flex';
   }
 }
 
