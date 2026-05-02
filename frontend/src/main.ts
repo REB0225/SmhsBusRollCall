@@ -353,7 +353,7 @@ class App {
     
     if (!s) { document.body.className = 'gray-bg'; return; }
     if (!bus) { 
-        document.body.className = 'gray-bg'; 
+        document.body.className = 'purple-bg'; 
         msgEl.textContent = "請先選擇車次";
         msgEl.style.color = "gray";
         return; 

@@ -26,9 +26,10 @@ body {
 }
 
 body.gray-bg { background-color: var(--bg-gray); }
-body.green-bg { background-color: rgba(52, 199, 89, 0.6); }
-body.yellow-bg { background-color: rgba(255, 204, 0, 0.6); }
-body.red-bg { background-color: rgba(255, 59, 48, 0.6); }
+body.green-bg { background-color: rgba(52, 199, 89, 0.8); }
+body.yellow-bg { background-color: rgba(255, 204, 0, 0.8); }
+body.red-bg { background-color: rgba(255, 59, 48, 0.8); }
+body.purple-bg { background-color: rgba(200, 59, 200, 0.8); }
 
 /* Views */
 .view {
