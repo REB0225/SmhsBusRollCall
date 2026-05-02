@@ -43,8 +43,10 @@ class App {
   private reviewList = document.getElementById('review-list')!;
   private reviewSummary = document.getElementById('review-summary')!;
   private loadingOverlay = document.getElementById('loading-overlay')!;
+  
 
   // State
+  private currentUid: string | null = null;
   private authToken: string | null = null;
   private currentStudent: Student | null = null;
   private pendingRollCalls: PendingRecord[] = [];
@@ -283,6 +285,9 @@ class App {
   }
 
   private displayStudent(s: Student) {
+
+    this.currentUid = s.uid; // ← add this line
+
     (document.getElementById('student-name')!).textContent = s.name;
     (document.getElementById('student-badge')!).textContent = s.badge;
     (document.getElementById('student-class')!).textContent = s.class || "---";
@@ -300,21 +305,20 @@ class App {
 
   private async fetchPhotoSecure(uid: string) {
     try {
-        const res = await fetch(`${BASE_URL}/api/photo/${uid}?token=${this.authToken}`);
-        if (!res.ok) {
-            console.warn(`Photo fetch failed: ${res.status}`);
-            return;
-        }
+        const res = await fetch(`${BASE_URL}/api/photo/${uid}`, {
+          headers: { 'Authorization': `Bearer ${this.authToken}` }
+        });
+        if (!res.ok) return;
         const blob = await res.blob();
-        if (uid === this.currentUid) {
+        if (uid === this.currentUid) { // ← now actually works
             const photoEl = document.getElementById('student-photo') as HTMLImageElement;
             if (photoEl.src.startsWith('blob:')) URL.revokeObjectURL(photoEl.src);
             photoEl.src = URL.createObjectURL(blob);
         }
     } catch (e) {
-        console.error(`fetchPhotoSecure error for uid=${uid}:`, e);
+        console.error(`fetchPhotoSecure error:`, e);
     }
-  }
+}
 
   private isBusMatch(studentBus: string | undefined, selectedBus: string): boolean {
     if (!studentBus || !selectedBus) return false;
