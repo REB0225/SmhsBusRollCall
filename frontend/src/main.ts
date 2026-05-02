@@ -250,8 +250,8 @@ class App {
       this.bleDevice.addEventListener('gattserverdisconnected', () => {
         this.isConnected = false;
         this.updateStatus(false, "已斷開連接");
-        this.readyState.style.display = 'none';
-        this.studentCard.style.display = 'none';
+        this.readyState.style.display = 'flex';
+        this.studentCard.style.display = 'flex';
         document.body.className = 'gray-bg';
       });
 
