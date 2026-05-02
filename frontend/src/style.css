@@ -238,8 +238,6 @@ input:focus, select:focus {
   font-size: 16px;
 }
 
-.detail-row span { color: var(--secondary); }
-
 .bus-badge {
   display: inline-block;
   margin-top: 15px;
