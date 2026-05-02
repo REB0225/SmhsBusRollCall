@@ -251,7 +251,8 @@ class App {
         this.isConnected = false;
         this.updateStatus(false, "已斷開連接");
         this.readyState.style.display = 'flex';
-        this.studentCard.style.display = 'flex';
+        this.readyState.style.flexDirection = 'column';
+        this.studentCard.style.display = 'none';
         document.body.className = 'gray-bg';
       });
 
