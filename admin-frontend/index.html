@@ -274,10 +274,10 @@
                             <div class="form-group">
                                 <label>目標名單</label>
                                 <select id="student-list-type" class="table-input" onchange="resetStudentPreview()">
-                                    <option value="arrival">早上名單 (主要)</option>
-                                    <option value="full_departure">下午名單 (週五)</option>
-                                    <option value="night_class_afternoon">夜間下午 (一至四)</option>
-                                    <option value="night_class_night">夜間晚上 (一至四)</option>
+                                    <option value="arrival">早上</option>
+                                    <option value="full_departure">大放學</option>
+                                    <option value="night_class_afternoon">夜輔下午放學</option>
+                                    <option value="night_class_night">夜輔晚上放學</option>
                                 </select>
                             </div>
                             <input type="file" id="file-students" accept=".csv" style="margin-bottom: 10px; font-size: 12px;">
@@ -294,8 +294,10 @@
                             <div class="form-group">
                                 <label>目標車次列表</label>
                                 <select id="bus-list-type" class="table-input" onchange="resetBusPreview()">
-                                    <option value="arrival">早上名單</option>
-                                    <option value="full_departure">下午名單</option>
+                                    <option value="arrival">早上</option>
+                                    <option value="full_departure">大放學</option>
+                                    <option value="night_class_afternoon">夜輔下午放學</option>
+                                    <option value="night_class_night">夜輔晚上放學</option>
                                 </select>
                             </div>
                             <input type="file" id="file-buses" accept=".csv" style="margin-bottom: 10px; font-size: 12px;">
