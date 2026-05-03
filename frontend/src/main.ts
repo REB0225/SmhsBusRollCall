@@ -592,7 +592,7 @@ class App {
       btn.textContent = '✕';
       btn.title = '中斷連接';
     } else {
-      btn.textContent = '🚪';
+      btn.textContent = '➜]';
       btn.title = '登出';
     }
   }
