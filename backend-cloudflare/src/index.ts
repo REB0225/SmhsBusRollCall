@@ -377,6 +377,33 @@ app.post('/api/admin/config/buses', authorizeAdmin, async (c) => {
     return c.json({ success: true });
 });
 
+app.post('/api/admin/config/placeholder', authorizeAdmin, async (c) => {
+    const { photo } = await c.req.json();
+    if (!photo) return c.json({ error: "Missing data" }, 400);
+    await c.env.DB.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('placeholder_photo', ?)")
+        .bind(photo)
+        .run();
+    return c.json({ success: true });
+});
+
+app.get('/api/placeholder', async (c) => {
+    const config = await c.env.DB.prepare("SELECT value FROM config WHERE key = 'placeholder_photo'").first<string>("value");
+    
+    if (config) {
+        const base64Data = config.split(',')[1] || config;
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return new Response(bytes, {
+            headers: { 'Content-Type': 'image/jpeg' }
+        });
+    }
+    // Final fallback
+    return c.redirect('https://ui-avatars.com/api/?name=?&background=random');
+});
+
 app.get('/api/admin/photos', authorizeAdmin, async (c) => {
     const { results } = await c.env.DB.prepare("SELECT uid, name, badge, class FROM students WHERE photo IS NOT NULL ORDER BY name").all();
     return c.json(results);
