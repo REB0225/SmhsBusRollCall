@@ -559,23 +559,35 @@ app.get('/api/admin/photos', authorizeAdmin, async (req: Request, res: Response)
         try {
             const snapshot = await firestore.collection('students').orderBy('name').get();
             const photos: any[] = [];
-            const seenUids = new Set();
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.uid && !seenUids.has(data.uid)) {
-                    photos.push({ 
-                        uid: data.uid, 
-                        name: data.name, 
-                        badge: data.badge, 
-                        class: data.class,
-                        hasPhoto: !!data.photo 
-                    });
-                    seenUids.add(data.uid);
-                }
+                if (data.photo) photos.push({ uid: data.uid, name: data.name, badge: data.badge, class: data.class });
             });
             res.json(photos);
         } catch (err) { res.status(500).json({ error: "Failed to fetch photos" }); }
     } else { res.json([]); }
+});
+
+app.post('/api/admin/config/placeholder', authorizeAdmin, async (req: Request, res: Response) => {
+    const { photo } = req.body;
+    if (!firestore || !photo) return res.status(400).json({ error: "Missing data" });
+    try {
+        await firestore.collection('config').doc('photos').set({ placeholder: photo }, { merge: true });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to upload placeholder" }); }
+});
+
+app.get('/api/placeholder', async (req, res) => {
+    if (firestore) {
+        const doc = await firestore.collection('config').doc('photos').get();
+        if (doc.exists && doc.data()?.placeholder) {
+            const buffer = Buffer.from(doc.data()?.placeholder, 'base64');
+            res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': buffer.length });
+            return res.end(buffer);
+        }
+    }
+    // Final fallback if no custom placeholder uploaded
+    res.redirect('https://ui-avatars.com/api/?name=?&background=random');
 });
 
 app.delete('/api/admin/student/photo/:uid', authorizeAdmin, async (req: Request, res: Response) => {
