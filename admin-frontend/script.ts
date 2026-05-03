@@ -39,6 +39,42 @@ let parsedData: { students: string | null, buses: string | null } = { students: 
 
 if (authToken) { showDashboard(); }
 
+// Expose functions to window for inline onclick handlers
+(window as any).openSettings = openSettings;
+(window as any).saveSettings = saveSettings;
+(window as any).testConnection = testConnection;
+(window as any).login = login;
+(window as any).logout = logout;
+(window as any).showDashboard = showDashboard;
+(window as any).uploadSystemPlaceholder = uploadSystemPlaceholder;
+(window as any).switchTab = switchTab;
+(window as any).renderAccounts = renderAccounts;
+(window as any).addAccount = addAccount;
+(window as any).resetPassword = resetPassword;
+(window as any).saveAccounts = saveAccounts;
+(window as any).renderSlots = renderSlots;
+(window as any).addSlot = addSlot;
+(window as any).saveSlots = saveSlots;
+(window as any).updateDefaultSlot = updateDefaultSlot;
+(window as any).resetToDefaults = resetToDefaults;
+(window as any).fetchPhotos = fetchPhotos;
+(window as any).renderPhotos = renderPhotos;
+(window as any).filterPhotos = filterPhotos;
+(window as any).deletePhoto = deletePhoto;
+(window as any).deleteFolderPhotos = deleteFolderPhotos;
+(window as any).uploadStudentPhoto = uploadStudentPhoto;
+(window as any).uploadBulkPhotos = uploadBulkPhotos;
+(window as any).fetchTempRiders = fetchTempRiders;
+(window as any).deleteTempRider = deleteTempRider;
+(window as any).addTemporaryRider = addTemporaryRider;
+(window as any).fetchBusesForTemp = fetchBusesForTemp;
+(window as any).lookupStudent = lookupStudent;
+(window as any).updateOccupancy = updateOccupancy;
+(window as any).previewCSV = previewCSV;
+(window as any).uploadConfig = uploadConfig;
+(window as any).downloadCSV = downloadCSV;
+(window as any).downloadWeekCSV = downloadWeekCSV;
+
 function openSettings(): void {
     (document.getElementById('settingsModal') as HTMLElement).style.display = 'flex';
     (document.getElementById('apiUrlInput') as HTMLInputElement).value = BASE_URL;
