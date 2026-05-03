@@ -325,20 +325,31 @@ class App {
   private async fetchPhotoSecure(uid: string) {
     const photoLoading = document.getElementById('photo-loading')!;
     photoLoading.style.display = 'flex';
+    const student = this.allStudents[uid];
+    const studentName = student?.name || "未知";
+    
     try {
       const res = await fetch(`${BASE_URL}/api/photo/${uid}`, {
         headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
+      const photoEl = document.getElementById('student-photo') as HTMLImageElement;
       if (res.ok) {
         const blob = await res.blob();
         if (uid === this.currentUid) {
-          const photoEl = document.getElementById('student-photo') as HTMLImageElement;
           if (photoEl.src.startsWith('blob:')) URL.revokeObjectURL(photoEl.src);
           photoEl.src = URL.createObjectURL(blob);
+        }
+      } else {
+        if (uid === this.currentUid) {
+            photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentName)}&background=random`;
         }
       }
     } catch (e) {
       console.error('fetchPhotoSecure error:', e);
+      const photoEl = document.getElementById('student-photo') as HTMLImageElement;
+      if (uid === this.currentUid) {
+          photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentName)}&background=random`;
+      }
     } finally {
       photoLoading.style.display = 'none'; // always hide, even on error
     }
