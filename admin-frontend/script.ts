@@ -366,7 +366,7 @@ function renderSlots(): void {
 }
 
 function addSlot(): void {
-    const dv = (document.getElementById('new-slot-day') as HTMLSelectElement).value;
+    const checkedDays = Array.from(document.querySelectorAll('input[name="slot-day"]:checked')).map((el: any) => parseInt(el.value));
     const s = (document.getElementById('new-slot-start') as HTMLInputElement).value.trim();
     const e = (document.getElementById('new-slot-end') as HTMLInputElement).value.trim();
     const csv = (document.getElementById('new-slot-csv') as HTMLInputElement).value;
@@ -374,10 +374,16 @@ function addSlot(): void {
     const t = (document.getElementById('new-slot-type') as HTMLSelectElement).value;
     if(!s || !e || !l) return alert('請填寫完整');
     const ns: SlotConfig = { start: s, end: e, csvType: csv, label: l, isTemp: t === 'temp' };
-    if (dv.startsWith('group:')) ns.days = dv.split(':')[1].split(',').map(Number);
-    else if (dv !== "") ns.day = parseInt(dv);
+    
+    if (checkedDays.length > 0) {
+        if (checkedDays.length === 1) ns.day = checkedDays[0];
+        else ns.days = checkedDays;
+    }
+    
     slotConfigs.push(ns);
     renderSlots();
+    // Uncheck boxes after adding
+    document.querySelectorAll('input[name="slot-day"]').forEach((el: any) => el.checked = false);
 }
 
 async function saveSlots(): Promise<void> {
