@@ -40,8 +40,8 @@ const authorizeAdmin = async (c: any, next: any) => {
 // --- Helpers ---
 
 const getSlotConfigs = async (db: D1Database) => {
-  const slots = await db.prepare("SELECT value FROM config WHERE key = 'slots'").first<string>();
-  const defaultSlot = await db.prepare("SELECT value FROM config WHERE key = 'default_slot'").first<string>();
+  const slots = await db.prepare("SELECT value FROM config WHERE key = 'slots'").first<string>("value");
+  const defaultSlot = await db.prepare("SELECT value FROM config WHERE key = 'default_slot'").first<string>("value");
   return {
     slots: slots ? JSON.parse(slots) : [],
     default: defaultSlot ? JSON.parse(defaultSlot) : { csvType: "arrival", label: "不在時段內" }
@@ -106,10 +106,10 @@ app.get('/api/buses', authorize, async (c) => {
   const info = getTimeSlotInfo(slots, defaultSlot);
   
   const configKey = `buses_${info.csvType}`;
-  let busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = ?").bind(configKey).first<string>();
+  let busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = ?").bind(configKey).first<string>("value");
   
   if (!busesJson) {
-    busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = 'buses'").first<string>();
+    busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = 'buses'").first<string>("value");
   }
   
   return c.json(busesJson ? JSON.parse(busesJson) : []);
@@ -234,8 +234,8 @@ app.get('/api/admin/bus-occupancy', authorizeAdmin, async (c) => {
 
   // Get bus limit
   const configKey = `buses_${csvType}`;
-  let busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = ?").bind(configKey).first<string>();
-  if (!busesJson) busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = 'buses'").first<string>();
+  let busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = ?").bind(configKey).first<string>("value");
+  if (!busesJson) busesJson = await c.env.DB.prepare("SELECT value FROM config WHERE key = 'buses'").first<string>("value");
   
   const busList = busesJson ? JSON.parse(busesJson) : [];
   const busObj = busList.find((b: any) => (b.name || b.bus) === bus);
