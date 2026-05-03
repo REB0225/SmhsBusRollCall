@@ -134,21 +134,13 @@ app.get('/api/students', authorize, async (c) => {
 
   const students: Record<string, any> = {};
 
-  // 1. Fetch Master Students (arrival) as a base
-  const { results: masterList } = await c.env.DB.prepare("SELECT * FROM students WHERE listType = 'arrival'").all<any>();
-  masterList.forEach(s => {
+  // 1. Fetch Students strictly for the active slot type
+  const { results: studentList } = await c.env.DB.prepare("SELECT * FROM students WHERE listType = ?").bind(activeCsvType).all<any>();
+  studentList.forEach(s => {
     students[s.uid] = s;
   });
 
-  // 2. Fetch Current Slot Students to OVERRIDE (if not arrival)
-  if (activeCsvType !== 'arrival') {
-    const { results: slotList } = await c.env.DB.prepare("SELECT * FROM students WHERE listType = ?").bind(activeCsvType).all<any>();
-    slotList.forEach(s => {
-      students[s.uid] = s;
-    });
-  }
-
-  // 3. Fetch Temporary Riders (Highest Priority Override)
+  // 2. Fetch Temporary Riders (Override/Add for this specific trip)
   const { results: temps } = await c.env.DB.prepare("SELECT * FROM temporary_riders WHERE date = ? AND timeSlot = ?")
     .bind(targetDateStr, timeSlot)
     .all<any>();
