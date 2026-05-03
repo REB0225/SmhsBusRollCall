@@ -709,10 +709,10 @@ async function previewCSV(type: 'students' | 'buses'): Promise<void> {
 }
 
 const CSV_TYPE_MAP: Record<string, string> = {
-    'arrival': '早上名單 (主要)',
-    'full_departure': '下午名單 (週五)',
-    'night_class_afternoon': '夜間下午 (一至四)',
-    'night_class_night': '夜間晚上 (一至四)'
+    'arrival': '早上',
+    'full_departure': '大放學',
+    'night_class_afternoon': '夜輔下午放學',
+    'night_class_night': '夜輔晚上放學'
 };
 
 async function uploadConfig(type: 'students' | 'buses'): Promise<void> {
