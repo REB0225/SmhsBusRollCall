@@ -85,17 +85,43 @@ class App {
     }
 }
 
-  private async isSameSlot(ts1: string, ts2: string): Promise<boolean> {
-    const d1 = new Date(ts1);
-    const d2 = new Date(ts2);
+  private async isSameSlot(recordTimestamp: string): Promise<boolean> {
+    const recordDate = new Date(recordTimestamp);
+    
+    // Fetch active slot info
+    const { slots, default: defaultSlot } = await this.getCurrentSlotConfig();
+    const slotInfo = this.getTimeSlotInfo(slots, defaultSlot, recordDate);
+    
+    // Get current active slot info
+    const now = new Date();
+    const currentSlotInfo = this.getTimeSlotInfo(slots, defaultSlot, now);
+    
+    // Compare if they fall in the same slot definition
+    return slotInfo.csvType === currentSlotInfo.csvType && 
+           slotInfo.label === currentSlotInfo.label;
+  }
 
-    const date1 = d1.toISOString().split('T')[0];
-    const date2 = d2.toISOString().split('T')[0];
-    if (date1 !== date2) return false;
+  private async getCurrentSlotConfig() {
+      const res = await fetch(`${BASE_URL}/api/admin/config/slots`, {
+          headers: { 'Authorization': `Bearer ${this.authToken}` }
+      });
+      return await res.json();
+  }
 
-    const { slot: currentSlot } = await this.getCurrentSlot();
-    return currentSlot !== 'unknown' && 
-           currentSlot === currentSlot; // both records checked against server slot
+  // Simple copy of backend logic for frontend check
+  private getTimeSlotInfo(slots: any[], defaultSlot: any, dateObj: Date) {
+      const taipeiTime = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+      const currentTimeStr = `${taipeiTime.getHours().toString().padStart(2, '0')}:${taipeiTime.getMinutes().toString().padStart(2, '0')}`;
+      const day = taipeiTime.getDay();
+    
+      const matches = slots.filter((s: any) => {
+        const matchDay = (s.day === undefined && s.days === undefined) || 
+                        (s.day !== undefined && s.day === day) || 
+                        (s.days !== undefined && s.days.includes(day));
+        return matchDay && currentTimeStr >= s.start && currentTimeStr < s.end;
+      });
+    
+      return matches.length === 0 ? { ...defaultSlot, start: "00:00", end: "23:59" } : matches[0];
   }
 
   private initEventListeners() {
@@ -426,9 +452,8 @@ class App {
       try {
         this.pendingRollCalls = JSON.parse(saved);
 
-        const now = new Date().toISOString();
         const checks = await Promise.all(
-          this.pendingRollCalls.map(r => this.isSameSlot(r.timestamp, now))
+          this.pendingRollCalls.map(r => this.isSameSlot(r.timestamp))
         );
         this.isMismatchedData = checks.some(same => !same);
 
