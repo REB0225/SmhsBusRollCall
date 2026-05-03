@@ -245,7 +245,12 @@
                                     </select></td>
                                     <td><input type="text" id="new-slot-start" placeholder="07:00" class="table-input"></td>
                                     <td><input type="text" id="new-slot-end" placeholder="09:00" class="table-input"></td>
-                                    <td><select id="new-slot-csv" class="table-input"><option value="arrival">早上</option><option value="full_departure">下午</option></select></td>
+                                    <td><select id="new-slot-csv" class="table-input">
+                                        <option value="arrival">早上</option>
+                                        <option value="full_departure">大放學</option>
+                                        <option value="night_class_afternoon">夜輔下午放學</option>
+                                        <option value="night_class_night">夜輔晚上放學</option>
+                                    </select></td>
                                     <td><input type="text" id="new-slot-label" placeholder="名稱" class="table-input"></td>
                                     <td><select id="new-slot-type" class="table-input"><option value="permanent">永久</option><option value="temp">臨時</option></select></td>
                                     <td><button onclick="addSlot()" class="text-btn" style="font-weight: bold;">新增</button></td>

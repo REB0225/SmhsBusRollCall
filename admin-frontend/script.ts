@@ -39,7 +39,19 @@ let parsedData: { students: string | null, buses: string | null } = { students: 
 
 if (authToken) { showDashboard(); }
 
+async function downloadListCSV(type: 'students' | 'buses', csvTypeParam?: string): Promise<void> {
+    const csvType = csvTypeParam || (document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`) as HTMLSelectElement).value;
+    const url = `${BASE_URL}/api/admin/config/${type}/csv?csvType=${encodeURIComponent(csvType)}`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${authToken}` } });
+    if (res.ok) {
+        const blob = await res.blob();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${type}-${csvType}.csv`; a.click();
+    } else { alert('下載失敗'); }
+}
+
 // Expose functions to window for inline onclick handlers
+(window as any).downloadListCSV = downloadListCSV;
 (window as any).openSettings = openSettings;
 (window as any).saveSettings = saveSettings;
 (window as any).testConnection = testConnection;
@@ -695,6 +707,13 @@ async function previewCSV(type: 'students' | 'buses'): Promise<void> {
     };
     reader.readAsText(file);
 }
+
+const CSV_TYPE_MAP: Record<string, string> = {
+    'arrival': '早上名單 (主要)',
+    'full_departure': '下午名單 (週五)',
+    'night_class_afternoon': '夜間下午 (一至四)',
+    'night_class_night': '夜間晚上 (一至四)'
+};
 
 async function uploadConfig(type: 'students' | 'buses'): Promise<void> {
     const raw = parsedData[type];
