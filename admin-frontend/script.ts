@@ -39,6 +39,26 @@ let parsedData: { students: string | null, buses: string | null } = { students: 
 
 if (authToken) { showDashboard(); }
 
+// --- Dark mode toggle ---
+const themeToggle = document.getElementById('themeToggle') as HTMLElement;
+const themeImage = document.getElementById('theme-img') as HTMLElement;
+const root = document.documentElement;
+
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme) root.setAttribute('data-theme', savedTheme);
+
+if (themeToggle) {
+    if (root.getAttribute('data-theme') === 'dark') themeImage.textContent = 'brightness_7';
+
+    themeToggle.addEventListener('click', () => {
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const next = isDark ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        themeImage.textContent = next === 'dark' ? 'brightness_7' : 'moon_stars';
+    });
+}
+
 async function downloadListCSV(type: 'students' | 'buses', csvTypeParam?: string): Promise<void> {
     const csvType = csvTypeParam || (document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`) as HTMLSelectElement).value;
     const url = `${BASE_URL}/api/admin/config/${type}/csv?csvType=${encodeURIComponent(csvType)}`;
@@ -522,7 +542,7 @@ function renderPhotos(photos: any[]): void {
                 <div class="photo-card-actions">
                     <button class="photo-action-btn delete" title="批量刪除此目錄所有相片" onclick="event.stopPropagation(); deleteFolderPhotos('${cls}')">✕</button>
                 </div>
-                <div class="photo-card-img" style="background: #e3f2fd; flex-direction: column; gap: 10px; cursor: pointer;" onclick="openPhotoFolder('${cls}')">
+                <div id="class-img" class="photo-card-img" style="flex-direction: column; gap: 10px; cursor: pointer;" onclick="openPhotoFolder('${cls}')">
                     <svg width="60" height="60" viewBox="0 0 24 24" fill="#1976d2"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
                     <span style="font-weight: 600; color: #1976d2;">${cls}</span>
                 </div>

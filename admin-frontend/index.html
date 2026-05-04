@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>點名系統管理後台</title>
+    <title>海星校車點名系統管理後台</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -38,7 +39,12 @@
                 <span id="welcomeText" style="font-weight: 600;">您好，管理員</span>
                 <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">系統管理控制面板 | 目前時段: <span id="current-slot-display" style="color: var(--primary); font-weight: 600;">讀取中...</span></div>
             </div>
-            <a class="logout-link" onclick="logout()">登出</a>
+            <div>
+                <button id="themeToggle" class="icon-btn">
+                    <span id="theme-img" class="material-symbols-outlined">moon_stars</span>
+                </button>
+                <a class="logout-link" onclick="logout()">登出</a>
+            </div>
         </div>
 
         <!-- Navigation -->
@@ -103,7 +109,7 @@
                         <div class="form-group"><label>班級 (選填)</label><input type="text" id="temp-class" placeholder="例如: 普一忠/國八孝"></div>
                     </div>
                     
-                    <div id="occupancy-info" class="preview-container" style="display: none; margin-bottom: 15px; background: #e1f5fe; color: #01579b; border: none;">
+                    <div id="occupancy-info" class="preview-container" style="display: none;">
                         <strong>車輛負載:</strong> <span id="occupancy-count">0 / 40</span>
                     </div>
                     <button id="add-temp-btn" class="primary-btn" onclick="addTemporaryRider()">新增指派</button>
@@ -137,7 +143,7 @@
                         <input type="file" id="photo-upload-file" accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
                         <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="padding: 8px; font-size: 12px;">上傳至資料庫</button>
                     </div>
-                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                    <div class="small-border">
                         <label style="font-size: 11px; font-weight: 600;">批量上傳 (檔名需為學號)</label>
                         <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
                         <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 8px; font-size: 12px;">開始批量上傳</button>
@@ -154,32 +160,13 @@
             <h1>系統設定</h1>
             <p class="subtitle">管理帳號、時段與基礎名單資料</p>
             <div class="admin-cards">
-                <!-- 0. System Placeholder -->
-                <div class="config-card" style="grid-column: 1 / -1; border-color: var(--warning);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="margin: 0;">系統預設相片 (Placeholder)</h3>
-                            <p style="font-size: 11px; color: var(--secondary-text); margin-top: 5px;">當學生沒有個人相片時，系統將會顯示此預設圖示。</p>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div id="current-placeholder-preview" style="width: 60px; height: 60px; border-radius: 10px; background: #eee; overflow: hidden; border: 1px solid #d2d2d7;">
-                                <img id="placeholder-img" src="" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=?&background=random'">
-                            </div>
-                            <div>
-                                <input type="file" id="placeholder-file" accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px; display: block;">
-                                <button onclick="uploadSystemPlaceholder()" id="placeholder-upload-btn" class="primary-btn" style="padding: 8px 15px; font-size: 12px; margin: 0;">更新預設相片</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 1. Accounts -->
                 <div class="config-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h3 style="margin: 0;">帳號管理</h3>
                         <button onclick="saveAccounts()" id="save-accounts-btn" class="secondary-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">儲存帳號變更</button>
                     </div>
-                    <div style="background: #f5f5f7; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
+                    <div class="info-box">
                         <h4 style="margin: 0 0 1rem 0; font-size: 13px;">新增帳號</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                             <input type="text" id="new-account-username" placeholder="帳號" class="table-input">
@@ -206,7 +193,7 @@
                     </div>
                     
                     <!-- Default/Fallback Configuration -->
-                    <div style="background: #fbfbfd; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border: 1px solid #d2d2d7;">
+                    <div class="info-box">
                         <h4 style="margin: 0 0 1rem 0; font-size: 13px;">預設配置 (不在時段內時)</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div class="form-group" style="margin: 0;">
@@ -230,7 +217,7 @@
                             <thead><tr><th>日期</th><th>開始</th><th>結束</th><th>名單</th><th>名稱</th><th>類型</th><th>操作</th></tr></thead>
                             <tbody id="slots-body"></tbody>
                             <tfoot>
-                                <tr style="background: #fbfbfd; border-top: 2px solid #eee;">
+                                <tr class="subtotal-row">
                                     <td>
                                         <div style="position: relative;">
                                             <button type="button" class="secondary-btn" onclick="toggleDaysDropdown(event)" style="padding: 5px 10px; font-size: 11px; margin: 0;">選擇日期 ▼</button>
@@ -284,7 +271,7 @@
                             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                                 <button onclick="previewCSV('students')" class="secondary-btn" style="flex: 1; padding: 10px; font-size: 13px; margin: 0; min-width: 100px;">預覽檔案</button>
                                 <button id="upload-students" onclick="uploadConfig('students')" disabled class="primary-btn" style="flex: 1; padding: 10px; font-size: 13px; margin: 0; min-width: 100px;">確認上傳</button>
-                                <button onclick="downloadListCSV('students')" class="secondary-btn" style="flex: 1.5; padding: 10px; font-size: 13px; margin: 0; min-width: 150px; background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7;">下載目前名單</button>
+                                <button onclick="downloadListCSV('students')" class="list-dl-btn">下載目前名單</button>
                             </div>
                             <div id="preview-students" class="preview-container" style="display:none"></div>
                             <p id="status-students" class="status-msg"></p>
@@ -305,10 +292,29 @@
                             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                                 <button onclick="previewCSV('buses')" class="secondary-btn" style="flex: 1; padding: 10px; font-size: 13px; margin: 0; min-width: 100px;">預覽檔案</button>
                                 <button id="upload-buses" onclick="uploadConfig('buses')" disabled class="primary-btn" style="flex: 1; padding: 10px; font-size: 13px; margin: 0; min-width: 100px;">確認上傳</button>
-                                <button onclick="downloadListCSV('buses')" class="secondary-btn" style="flex: 1.5; padding: 10px; font-size: 13px; margin: 0; min-width: 150px; background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7;">下載目前列表</button>
+                                <button onclick="downloadListCSV('buses')" class="list-dl-btn">下載目前列表</button>
                             </div>
                             <div id="preview-buses" class="preview-container" style="display:none"></div>
                             <p id="status-buses" class="status-msg"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 0. System Placeholder -->
+                <div class="config-card" style="grid-column: 1 / -1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0;">系統預設相片 (Placeholder)</h3>
+                            <p style="font-size: 11px; color: var(--secondary-text); margin-top: 5px;">當學生沒有個人相片時，系統將會顯示此預設圖示。</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div id="current-placeholder-preview" style="width: 60px; height: 60px; border-radius: 10px; background: #eee; overflow: hidden; border: 1px solid #d2d2d7;">
+                                <img id="placeholder-img" src="" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=?&background=random'">
+                            </div>
+                            <div>
+                                <input type="file" id="placeholder-file" accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px; display: block;">
+                                <button onclick="uploadSystemPlaceholder()" id="placeholder-upload-btn" class="primary-btn" style="padding: 8px 15px; font-size: 12px; margin: 0;">更新預設相片</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -334,4 +340,3 @@
     <script type="module" src="script.ts"></script>
 </body>
 </html>
-l>
