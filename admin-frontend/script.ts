@@ -626,17 +626,13 @@ async function uploadStudentPhoto(): Promise<void> {
     const fileInput = document.getElementById('photo-upload-file') as HTMLInputElement;
     const file = fileInput.files?.[0];
     if (!uid || !file) return alert('請輸入 UID 並選擇檔案');
-    const reader = new FileReader();
-    reader.onload = async () => {
-        const photo = (reader.result as string).split(',')[1];
-        const res = await fetch(`${BASE_URL}/api/admin/student/photo`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ uid, photo })
-        });
-        if (res.ok) { alert('上傳成功'); fetchPhotos(); }
-    };
-    reader.readAsDataURL(file);
+    const photo = await compressPhoto(file);
+    const res = await fetch(`${BASE_URL}/api/admin/student/photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ uid, photo })
+    });
+    if (res.ok) { alert('上傳成功'); fetchPhotos(); }
 }
 
 function compressPhoto(file: File, maxW = 600, maxH = 800): Promise<string> {

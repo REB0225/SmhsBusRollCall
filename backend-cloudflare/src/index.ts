@@ -390,20 +390,26 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
     const { students, csvType } = await c.req.json();
     const type = csvType || "arrival";
     
-    // Delete existing students for this listType to perform an overwrite
+    // Deduplicate by uid — last entry wins
+    const uniqueStudents = Object.values(
+        students.reduce((acc: any, s: any) => {
+            if (s.uid) acc[s.uid] = s;
+            return acc;
+        }, {})
+    );
+
     await c.env.DB.prepare("DELETE FROM students WHERE listType = ?").bind(type).run();
 
-    const queries = students.map((s: any) => {
+    const queries = (uniqueStudents as any[]).map((s: any) => {
         return c.env.DB.prepare("INSERT INTO students (uid, listType, name, badge, class, bus, photo) VALUES (?, ?, ?, ?, ?, ?, ?)")
             .bind(s.uid, type, s.name, s.badge || "", s.class || "", s.bus || "", s.photo || null);
     });
 
-    // D1 has limits on batch size, but for now we'll try it or chunk it
     for (let i = 0; i < queries.length; i += 100) {
         await c.env.DB.batch(queries.slice(i, i + 100));
     }
     
-    return c.json({ success: true });
+    return c.json({ success: true, count: uniqueStudents.length });
 });
 
 app.post('/api/admin/config/buses', authorizeAdmin, async (c) => {
