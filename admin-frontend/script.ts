@@ -639,6 +639,33 @@ async function uploadStudentPhoto(): Promise<void> {
     reader.readAsDataURL(file);
 }
 
+function compressPhoto(file: File, maxW = 600, maxH = 800): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = reject;
+            img.onload = () => {
+                // Scale down keeping aspect ratio, only if larger than target
+                let { width, height } = img;
+                const scale = Math.min(maxW / width, maxH / height, 1);
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+                // base64 without the data:image/jpeg;base64, prefix
+                resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+            };
+            img.src = reader.result as string;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function uploadBulkPhotos(): Promise<void> {
     const fileInput = document.getElementById('photo-bulk-input') as HTMLInputElement;
     const files = fileInput.files;
@@ -652,11 +679,7 @@ async function uploadBulkPhotos(): Promise<void> {
         const badge = filenameWithoutExt;
         const student = allStudentsList.find(s => s.badge === badge);
         if (student) {
-            const base64 = await new Promise<string>(r => { 
-                const reader = new FileReader(); 
-                reader.onload = () => r((reader.result as string).split(',')[1]); 
-                reader.readAsDataURL(f); 
-            });
+            const base64 = await compressPhoto(f);
             await fetch(`${BASE_URL}/api/admin/student/photo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
