@@ -10,7 +10,8 @@
     --error: #ff3b30;
     --input-bg: #fbfbfd;
     --input-border: #d2d2d7;
-    --th-bg: #f5f5f7;
+    --th-bg: #beeaff;
+    --th-bg-e: #ffbebe;
     --secondary-btn-bg: #e8e8ed;
     --secondary-btn-text: #1d1d1f;
     --border-color: #d2d2d7;
@@ -30,7 +31,8 @@
         --error: #ff453a;
         --input-bg: #3a3a3c;
         --input-border: #48484a;
-        --th-bg: #3a3a3c;
+        --th-bg: #124760;
+        --th-bg-e: #601212;
         --secondary-btn-bg: #3a3a3c;
         --secondary-btn-text: #f5f5f7;
         --border-color: #48484a;
@@ -125,7 +127,6 @@ button {
 
 /* Fix elements with hardcoded colors */
 [data-theme="dark"] .secondary-btn { background-color: #e8e8ed; color: #424141;}
-[data-theme="dark"] #class-img{ background: #124760;}
 [data-theme="dark"] .photo-card-info {border-top: 1px solid #4a4a4c;}
 [data-theme="dark"] .small-border { border-top: 1px solid #000;}
 [data-theme="dark"] .list-dl-btn{ background: #38a1d2; color: #01579b; border:2px solid #248bdb;}
@@ -240,6 +241,7 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align
 .preview-container { background: var(--bg); padding: 10px; border-radius: 8px; margin-top: 10px; font-family: monospace; font-size: 11px; white-space: pre; border: 1px solid var(--border-color); }
 
 #class-img{ background: var(--th-bg); }
+#class-img-e{ background: var(--th-bg-e); }
 
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
 .photo-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); transition: all 0.2s; position: relative; }

@@ -515,17 +515,23 @@ function renderPhotos(photos: any[]): void {
             grouped[cls].push(p);
         });
 
-        const classes = Object.keys(grouped).sort();
+        const classes = Object.keys(grouped).sort((a, b) => {
+            if (a === '未知') return -1;
+            if (b === '未知') return 1;
+            return a.localeCompare(b);
+        });
         classes.forEach(cls => {
             const folder = document.createElement('div');
             folder.className = 'photo-card';
+            const color = cls === '未知' ? '#ff3b30' : '#1976d2';
+            const bgc = cls === '未知' ? 'class-img-e' : 'class-img';
             folder.innerHTML = `
                 <div class="photo-card-actions">
                     <button class="photo-action-btn delete" title="批量刪除此目錄所有相片" onclick="window.deleteFolderPhotos('${cls}')">✕</button>
                 </div>
-                <div id="class-img" class="photo-card-img" style="flex-direction: column; gap: 10px; cursor: pointer;" onclick="window.openPhotoFolder('${cls}')">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="#1976d2"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-                    <span style="font-weight: 600; color: #1976d2;">${cls}</span>
+                <div id="${bgc}" class="photo-card-img" style="flex-direction: column; gap: 10px; cursor: pointer;" onclick="window.openPhotoFolder('${cls}')">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="${color}"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                    <span style="font-weight: 600; color: ${color};">${cls}</span>
                 </div>
                 <div class="photo-card-info" style="text-align: center;">
                     <div class="photo-card-name">${grouped[cls].length} 張相片</div>
