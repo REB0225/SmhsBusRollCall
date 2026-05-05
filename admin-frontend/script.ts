@@ -47,15 +47,30 @@ const root = document.documentElement;
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme) root.setAttribute('data-theme', savedTheme);
 
+function updateThemeIcon(): void {
+    if (!themeImage) return;
+    const isDark = root.getAttribute('data-theme') === 'dark' || 
+                  (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    themeImage.textContent = isDark ? 'brightness_7' : 'moon_stars';
+}
+
 if (themeToggle) {
-    if (root.getAttribute('data-theme') === 'dark') themeImage.textContent = 'brightness_7';
+    updateThemeIcon();
 
     themeToggle.addEventListener('click', () => {
-        const isDark = root.getAttribute('data-theme') === 'dark';
-        const next = isDark ? 'light' : 'dark';
+        const current = root.getAttribute('data-theme');
+        let next: string;
+        
+        if (!current) {
+            // If no manual theme, toggle based on system preference
+            next = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
+        } else {
+            next = current === 'dark' ? 'light' : 'dark';
+        }
+
         root.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
-        themeImage.textContent = next === 'dark' ? 'brightness_7' : 'moon_stars';
+        updateThemeIcon();
     });
 }
 
@@ -111,6 +126,7 @@ document.addEventListener('click', (e) => {
 (window as any).uploadSystemPlaceholder = uploadSystemPlaceholder;
 (window as any).switchTab = switchTab;
 (window as any).renderAccounts = renderAccounts;
+(window as any).updateAccount = updateAccount;
 (window as any).addAccount = addAccount;
 (window as any).resetPassword = resetPassword;
 (window as any).saveAccounts = saveAccounts;
@@ -124,6 +140,7 @@ document.addEventListener('click', (e) => {
 (window as any).fetchPhotos = fetchPhotos;
 (window as any).renderPhotos = renderPhotos;
 (window as any).filterPhotos = filterPhotos;
+(window as any).modifyPhoto = modifyPhoto;
 (window as any).deletePhoto = deletePhoto;
 (window as any).deleteFolderPhotos = deleteFolderPhotos;
 (window as any).uploadStudentPhoto = uploadStudentPhoto;
@@ -277,6 +294,12 @@ async function fetchAccounts(): Promise<void> {
     } catch (err) { console.error(err); }
 }
 
+function updateAccount(index: number, field: string, value: string): void {
+    if (accounts[index]) {
+        (accounts[index] as any)[field] = value;
+    }
+}
+
 function renderAccounts(): void {
     const body = document.getElementById('accounts-body') as HTMLElement;
     body.innerHTML = '';
@@ -286,9 +309,9 @@ function renderAccounts(): void {
         tr.innerHTML = `
             <td>${acc.username} ${isSelf ? '<span class="badge badge-user" style="font-size: 10px;">(您)</span>' : ''}</td>
             <td>•••••••• <button class="text-btn" onclick="resetPassword(${index})">重設</button></td>
-            <td><input type="text" value="${acc.name}" onchange="accounts[${index}].name=this.value" class="table-input"></td>
+            <td><input type="text" value="${acc.name}" onchange="updateAccount(${index}, 'name', this.value)" class="table-input"></td>
             <td>
-                <select onchange="accounts[${index}].type=this.value" class="table-input" ${isSelf ? 'disabled' : ''}>
+                <select onchange="updateAccount(${index}, 'type', this.value)" class="table-input" ${isSelf ? 'disabled' : ''}>
                     <option value="user" ${acc.type==='user'?'selected':''}>使用者</option>
                     <option value="admin" ${acc.type==='admin'?'selected':''}>管理員</option>
                 </select>
@@ -598,16 +621,24 @@ function renderPhotos(photos: any[]): void {
 
 function filterPhotos(): void {
     const q = (document.getElementById('photo-search') as HTMLInputElement).value.toLowerCase();
-    renderPhotos(allPhotos.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.uid.includes(q) || 
-        (p.badge && p.badge.includes(q)) || 
+    renderPhotos(allPhotos.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.uid.includes(q) ||
+        (p.badge && p.badge.includes(q)) ||
         (p.class && p.class.toLowerCase().includes(q))
     ));
 }
 
-async function deletePhoto(uid: string, name: string): Promise<void> {
-    if (confirm(`確定要刪除 ${name} 的相片嗎？`)) {
+function modifyPhoto(uid: string): void {
+    const uidInput = document.getElementById('photo-upload-uid') as HTMLInputElement;
+    if (uidInput) {
+        uidInput.value = uid;
+        uidInput.focus();
+        uidInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+async function deletePhoto(uid: string, name: string): Promise<void> {    if (confirm(`確定要刪除 ${name} 的相片嗎？`)) {
         const res = await fetch(`${BASE_URL}/api/admin/student/photo/${uid}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
         if (res.ok) { 
             allPhotos = allPhotos.filter(p => p.uid !== uid); 
@@ -659,7 +690,7 @@ async function uploadBulkPhotos(): Promise<void> {
     for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const filenameWithoutExt = f.name.split('.')[0];
-        const badge = filenameWithoutExt.replace(/\D/g, '');
+        const badge = filenameWithoutExt;
         const student = allStudentsList.find(s => s.badge === badge);
         if (student) {
             const base64 = await new Promise<string>(r => { 
