@@ -691,7 +691,7 @@ async function uploadBulkPhotos(): Promise<void> {
 
 async function fetchGlobalStudents(): Promise<void> {
     try {
-        const res = await fetch(`${BASE_URL}/api/students`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const res = await fetch(`${BASE_URL}/api/students/all`, { headers: { 'Authorization': `Bearer ${authToken}` } });
         if (res.ok) allStudentsList = Object.values(await res.json());
     } catch (err) {}
 }

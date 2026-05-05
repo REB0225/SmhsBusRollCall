@@ -152,6 +152,15 @@ app.get('/api/students', authorize, async (c) => {
   return c.json(students);
 });
 
+app.get('/api/students/all', authorize, async (c) => {
+  const { results } = await c.env.DB.prepare("SELECT uid, name, badge, class FROM students GROUP BY uid").all<any>();
+  const students: Record<string, any> = {};
+  results.forEach(s => {
+    students[s.uid] = s;
+  });
+  return c.json(students);
+});
+
 app.get('/api/admin/config/slots', authorizeAdmin, async (c) => {
   const configs = await getSlotConfigs(c.env.DB);
   return c.json(configs);
