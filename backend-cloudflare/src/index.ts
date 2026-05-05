@@ -204,7 +204,7 @@ app.post('/api/admin/config/accounts', authorizeAdmin, async (c) => {
         let finalType = type;
         if (username === adminUser || username === 'admin') finalType = 'admin';
         queries.push(c.env.DB.prepare("INSERT OR REPLACE INTO accounts (username, password, type, name) VALUES (?, ?, ?, ?)")
-            .bind(username, password, finalType, name));
+            .bind(username, password ?? "", finalType ?? "user", name ?? username));
     }
   });
 
@@ -220,7 +220,7 @@ app.get('/api/admin/temporary-riders', authorizeAdmin, async (c) => {
 app.post('/api/admin/temporary-riders', authorizeAdmin, async (c) => {
   const { date, timeSlot, bus, uid, name, badge, class: studentClass } = await c.req.json();
   await c.env.DB.prepare("INSERT INTO temporary_riders (date, timeSlot, bus, uid, name, badge, class) VALUES (?, ?, ?, ?, ?, ?, ?)")
-    .bind(date, timeSlot, bus, uid, name, badge || "---", studentClass || "")
+    .bind(date, timeSlot, bus, uid, name, badge ?? "---", studentClass ?? "")
     .run();
   return c.json({ success: true });
 });
@@ -436,7 +436,7 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
         if (!stillInList) {
             rescuedQueries.push(
                 c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, 'unknown', ?, ?, '未知', ?)")
-                .bind(old.uid, old.name, old.badge || "", old.photo)
+                .bind(old.uid ?? null, old.name ?? null, old.badge ?? "", old.photo ?? null)
             );
         }
     }
@@ -444,17 +444,17 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
     // 4. Clean up "unknown" records that are now identified in the new list
     const unknownToCleanup = allPhotos.filter(p => p.listType === 'unknown' && (newStudentsMap.has(p.uid) || (p.badge && newBadgesSet.has(p.badge))));
     const cleanupQueries = unknownToCleanup.map(p => 
-        c.env.DB.prepare("DELETE FROM students WHERE uid = ? AND listType = 'unknown'").bind(p.uid)
+        c.env.DB.prepare("DELETE FROM students WHERE uid = ? AND listType = 'unknown'").bind(p.uid ?? null)
     );
 
     // 5. Clear the current list
-    await c.env.DB.prepare("DELETE FROM students WHERE listType = ?").bind(type).run();
+    await c.env.DB.prepare("DELETE FROM students WHERE listType = ?").bind(type ?? "arrival").run();
 
     // 6. Insert new students, matching photos by UID first, then Badge
     const insertQueries = Array.from(newStudentsMap.values()).map((s: any) => {
-        const photo = uidPhotoMap.get(s.uid) || (s.badge ? badgePhotoMap.get(s.badge) : null);
+        const photo = uidPhotoMap.get(s.uid) ?? (s.badge ? (badgePhotoMap.get(s.badge) ?? null) : null);
         return c.env.DB.prepare("INSERT INTO students (uid, listType, name, badge, class, bus, photo) VALUES (?, ?, ?, ?, ?, ?, ?)")
-            .bind(s.uid, type, s.name, s.badge || "", s.class || "", s.bus || "", photo);
+            .bind(s.uid ?? null, type ?? "arrival", s.name ?? null, s.badge ?? "", s.class ?? "", s.bus ?? "", photo);
     });
 
     // Execute batches
@@ -532,7 +532,7 @@ app.post('/api/admin/student/photo', authorizeAdmin, async (c) => {
     // 2. If no rows updated, create a placeholder in the "未知" category
     if (updateRes.meta.changes === 0) {
         await c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, ?, ?, ?, ?, ?)")
-            .bind(uid, 'unknown', name || uid, badge || "", className || '未知', photo)
+            .bind(uid, 'unknown', name ?? uid, badge ?? "", className ?? '未知', photo)
             .run();
     }
     
