@@ -267,6 +267,13 @@
                                     <option value="night_class_night">夜輔晚上放學</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label>檔案編碼</label>
+                                <select id="encoding-students" class="table-input" onchange="previewCSV('students')">
+                                    <option value="utf-8">UTF-8 (預設)</option>
+                                    <option value="big5">Big5 (繁體中文)</option>
+                                </select>
+                            </div>
                             <input type="file" id="file-students" accept=".csv" style="margin-bottom: 10px; font-size: 12px;">
                             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                                 <button onclick="previewCSV('students')" class="secondary-btn" style="flex: 1; padding: 10px; font-size: 13px; margin: 0; min-width: 100px;">預覽檔案</button>
@@ -286,6 +293,13 @@
                                     <option value="full_departure">大放學</option>
                                     <option value="night_class_afternoon">夜輔下午放學</option>
                                     <option value="night_class_night">夜輔晚上放學</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>檔案編碼</label>
+                                <select id="encoding-buses" class="table-input" onchange="previewCSV('buses')">
+                                    <option value="utf-8">UTF-8 (預設)</option>
+                                    <option value="big5">Big5 (繁體中文)</option>
                                 </select>
                             </div>
                             <input type="file" id="file-buses" accept=".csv" style="margin-bottom: 10px; font-size: 12px;">

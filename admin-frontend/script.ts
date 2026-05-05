@@ -785,6 +785,7 @@ async function previewCSV(type: 'students' | 'buses'): Promise<void> {
     const fileInput = document.getElementById(`file-${type}`) as HTMLInputElement;
     const file = fileInput.files?.[0];
     if (!file) return;
+    const encoding = (document.getElementById(`encoding-${type}`) as HTMLSelectElement).value;
     const reader = new FileReader();
     reader.onload = (e) => {
         const preview = document.getElementById(`preview-${type}`) as HTMLElement;
@@ -793,7 +794,7 @@ async function previewCSV(type: 'students' | 'buses'): Promise<void> {
         (document.getElementById(`upload-${type}`) as HTMLButtonElement).disabled = false;
         parsedData[type] = e.target?.result as string;
     };
-    reader.readAsText(file);
+    reader.readAsText(file, encoding);
 }
 
 const CSV_TYPE_MAP: Record<string, string> = {
