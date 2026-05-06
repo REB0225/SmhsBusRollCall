@@ -178,6 +178,19 @@ input:focus, select:focus {
   transition: opacity 0.2s, transform 0.1s;
 }
 
+.secondary-btn {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--secondary);
+  color: var(--select-color);
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
 .primary-btn:active { transform: scale(0.98); opacity: 0.9; }
 .primary-btn.success { background-color: var(--success); }
 
