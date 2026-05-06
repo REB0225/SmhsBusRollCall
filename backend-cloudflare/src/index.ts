@@ -637,7 +637,8 @@ app.post('/api/admin/student/photo', authorizeAdmin, async (c) => {
     // Update temporary riders as well
     await c.env.DB.prepare("UPDATE temporary_riders SET photo = ? WHERE uid = ?").bind(photo, uid).run();
 
-    // 2. If no rows updated, create a placeholder in the "未知" category    if (updateRes.meta.changes === 0) {
+    // 2. If no rows updated, create a placeholder in the "未知" category
+    if (updateRes.meta.changes === 0) {
         await c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(uid, 'unknown', name ?? uid, badge ?? "", className ?? '未知', photo)
             .run();
