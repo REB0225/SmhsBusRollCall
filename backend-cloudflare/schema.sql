@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS temporary_riders (
     uid TEXT NOT NULL,
     name TEXT NOT NULL,
     badge TEXT,
-    class TEXT
+    class TEXT,
+    photo TEXT -- Base64
 );
 
 CREATE TABLE IF NOT EXISTS rollcalls (

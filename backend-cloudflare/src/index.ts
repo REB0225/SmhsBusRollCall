@@ -302,8 +302,30 @@ app.get('/api/admin/temporary-riders', authorizeAdmin, async (c) => {
 
 app.post('/api/admin/temporary-riders', authorizeAdmin, async (c) => {
   const { date, timeSlot, bus, uid, name, badge, class: studentClass } = await c.req.json();
-  await c.env.DB.prepare("INSERT INTO temporary_riders (date, timeSlot, bus, uid, name, badge, class) VALUES (?, ?, ?, ?, ?, ?, ?)")
-    .bind(date, timeSlot, bus, uid, name, badge ?? "---", studentClass ?? "")
+  
+  // Try to find a photo for this student in the master database
+  let foundPhoto: string | null = null;
+  if (badge && badge !== "---") {
+    const studentWithPhoto = await c.env.DB.prepare("SELECT photo FROM students WHERE badge = ? AND photo IS NOT NULL LIMIT 1").bind(badge).first<any>();
+    if (studentWithPhoto) foundPhoto = studentWithPhoto.photo;
+  }
+  if (!foundPhoto && uid) {
+    const studentWithPhoto = await c.env.DB.prepare("SELECT photo FROM students WHERE uid = ? AND photo IS NOT NULL LIMIT 1").bind(uid).first<any>();
+    if (studentWithPhoto) foundPhoto = studentWithPhoto.photo;
+  }
+
+  // If we found a photo, ensure all master student records for this student also have it
+  if (foundPhoto) {
+    if (badge && badge !== "---") {
+      await c.env.DB.prepare("UPDATE students SET photo = ? WHERE badge = ? AND photo IS NULL").bind(foundPhoto, badge).run();
+    }
+    if (uid) {
+      await c.env.DB.prepare("UPDATE students SET photo = ? WHERE uid = ? AND photo IS NULL").bind(foundPhoto, uid).run();
+    }
+  }
+
+  await c.env.DB.prepare("INSERT INTO temporary_riders (date, timeSlot, bus, uid, name, badge, class, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(date, timeSlot, bus, uid, name, badge ?? "---", studentClass ?? "", foundPhoto)
     .run();
   return c.json({ success: true });
 });
@@ -611,9 +633,11 @@ app.post('/api/admin/student/photo', authorizeAdmin, async (c) => {
     
     // 1. Try to update existing records
     const updateRes = await c.env.DB.prepare("UPDATE students SET photo = ? WHERE uid = ?").bind(photo, uid).run();
-    
-    // 2. If no rows updated, create a placeholder in the "未知" category
-    if (updateRes.meta.changes === 0) {
+
+    // Update temporary riders as well
+    await c.env.DB.prepare("UPDATE temporary_riders SET photo = ? WHERE uid = ?").bind(photo, uid).run();
+
+    // 2. If no rows updated, create a placeholder in the "未知" category    if (updateRes.meta.changes === 0) {
         await c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(uid, 'unknown', name ?? uid, badge ?? "", className ?? '未知', photo)
             .run();
@@ -624,8 +648,15 @@ app.post('/api/admin/student/photo', authorizeAdmin, async (c) => {
 
 app.get('/api/photo/:uid', authorize, async (c) => {
     const uid = c.req.param('uid');
-    const student = await c.env.DB.prepare("SELECT photo FROM students WHERE uid = ? AND photo IS NOT NULL LIMIT 1").bind(uid).first<any>();
-    
+
+    // 1. Try master students table
+    let student = await c.env.DB.prepare("SELECT photo FROM students WHERE uid = ? AND photo IS NOT NULL LIMIT 1").bind(uid).first<any>();
+
+    // 2. Try temporary riders table
+    if (!student || !student.photo) {
+        student = await c.env.DB.prepare("SELECT photo FROM temporary_riders WHERE uid = ? AND photo IS NOT NULL LIMIT 1").bind(uid).first<any>();
+    }
+
     if (student && student.photo) {
         const base64Data = student.photo.split(',')[1] || student.photo;
         const binaryString = atob(base64Data);
@@ -639,7 +670,6 @@ app.get('/api/photo/:uid', authorize, async (c) => {
     }
     return c.text('Not found', 404);
 });
-
 app.get('/api/student/:uid', authorize, async (c) => {
   const uid = c.req.param('uid');
   const student = await c.env.DB.prepare("SELECT * FROM students WHERE uid = ? LIMIT 1").bind(uid).first<any>();
