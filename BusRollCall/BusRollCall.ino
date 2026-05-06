@@ -160,5 +160,5 @@ void loop() {
 
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
-  delay(1000);
+  delay(150);
 }

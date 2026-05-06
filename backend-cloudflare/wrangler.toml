@@ -7,6 +7,11 @@ binding = "DB"
 database_name = "bus-rollcall-db"
 database_id = "c05d960e-2a56-47b5-89d4-b0e24ef7db94"
 
+# Secrets like JWT_SECRET should be set via the Cloudflare Dashboard
+# or using 'wrangler secret put JWT_SECRET'
+# [vars]
+# JWT_SECRET = "..."
+
 [observability]
 enabled = false
 head_sampling_rate = 1

@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { sign, verify } from 'hono/jwt';
 
 type Bindings = {
   DB: D1Database;
-  ADMIN_TOKEN: string;
-  USER_TOKEN: string;
+  JWT_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -18,10 +18,14 @@ const authorize = async (c: any, next: any) => {
     ? authHeader.substring(7) 
     : queryToken;
   
-  if (token === c.env.ADMIN_TOKEN || token === c.env.USER_TOKEN) {
-    await next();
-  } else {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (!token) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256');
+    c.set('jwtPayload', payload);
+    return await next();
+  } catch (err: any) {
+    return c.json({ error: "Invalid or expired token", message: err.message }, 401);
   }
 };
 
@@ -32,10 +36,17 @@ const authorizeAdmin = async (c: any, next: any) => {
     ? authHeader.substring(7) 
     : queryToken;
   
-  if (token === c.env.ADMIN_TOKEN) {
-    await next();
-  } else {
-    return c.json({ error: "Forbidden: Admin access required" }, 403);
+  if (!token) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256');
+    if (payload.role !== 'admin') {
+      return c.json({ error: "Forbidden: Admin access required" }, 403);
+    }
+    c.set('jwtPayload', payload);
+    return await next();
+  } catch (err: any) {
+    return c.json({ error: "Invalid or expired token", message: err.message }, 401);
   }
 };
 
@@ -102,8 +113,19 @@ app.post('/api/login', async (c) => {
   
   if (user && user.password === password) {
     const isAdmin = (user.type === 'admin' || username === 'admin');
-    const token = isAdmin ? c.env.ADMIN_TOKEN : c.env.USER_TOKEN;
-    return c.json({ token, user: { name: user.name, username, type: isAdmin ? 'admin' : 'user' } });
+    const role = isAdmin ? 'admin' : 'user';
+    
+    // Create JWT
+    const payload = {
+      username: user.username,
+      name: user.name,
+      role: role,
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 1 week expiration
+    };
+    
+    const token = await sign(payload, c.env.JWT_SECRET, 'HS256');
+    
+    return c.json({ token, user: { name: user.name, username, type: role } });
   }
   
   return c.json({ error: "Invalid credentials" }, 401);
@@ -652,6 +674,9 @@ app.post('/api/rollcall/batch', authorize, async (c) => {
   const { records } = await c.req.json();
   if (!Array.isArray(records)) return c.json({ error: "Records array required" }, 400);
 
+  const payload = c.get('jwtPayload');
+  const createdBy = payload?.username || 'unknown';
+
   const { slots, default: defaultSlot } = await getSlotConfigs(c.env.DB);
   const queries = [];
 
@@ -665,6 +690,8 @@ app.post('/api/rollcall/batch', authorize, async (c) => {
       const timeSlot = getTimeSlot(slots, defaultSlot, dateObj);
 
       const recordId = `${uid}_${dateStr}_${timeSlot.replace(/:/g, '-')}`;
+      // Note: We'd need to update the schema to actually store 'createdBy', 
+      // but for now this demonstrates that the backend HAS the identity.
       queries.push(c.env.DB.prepare("INSERT OR REPLACE INTO rollcalls (id, uid, timestamp, date, timeSlot, syncedAt) VALUES (?, ?, ?, ?, ?, ?)")
           .bind(recordId, uid, timestamp, dateStr, timeSlot, new Date().toISOString()));
   }
