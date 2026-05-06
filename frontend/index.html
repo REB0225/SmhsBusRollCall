@@ -28,6 +28,7 @@
                     <label>密碼</label>
                     <input class="form" type="password" id="password" placeholder="請輸入密碼">
                 </div>
+                <a id="forgot-password">忘記密碼？</a>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
                     <button id="login-btn" class="primary-btn">登入</button>
                     <button id="show-register-btn" class="secondary-btn">註冊新帳號</button>
@@ -185,6 +186,19 @@
         <div class="loading-content">
             <div class="spinner"></div>
             <p>正在取得學生資料...</p>
+        </div>
+    </div>
+
+    <!-- Popout Box -->
+    <div id="the-popout" class="darken-back">
+        <div class="popout-box">
+            <div class="v-stack" style="width: 100%; gap: 10px;">
+                <p id="popout-text">Placeholder</p>
+                <div class="h-stack" style="width: 100%; gap: 10px;">
+                    <button id="popout-left" class="secondary-btn">Placeholder</button>
+                    <button id="popout-right" class="primary-btn">Placeholder</button>
+                </div>
+            </div>
         </div>
     </div>
 

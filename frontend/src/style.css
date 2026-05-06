@@ -166,7 +166,7 @@ input:focus, select:focus {
 }
 
 .primary-btn {
-  width: 100%;
+  flex: 1;
   padding: 16px;
   background-color: var(--primary);
   color: white;
@@ -178,8 +178,41 @@ input:focus, select:focus {
   transition: opacity 0.2s, transform 0.1s;
 }
 
+#forgot-password{
+  display: flex; 
+  flex-direction: row-reverse; 
+  color: var(--secondary); 
+  text-decoration: underline;
+}
+
+.darken-back{
+  z-index: 10000;
+  display: none;
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+}
+
+.popout-box{
+  display: flex;
+  position: fixed;
+  top: 40%;
+  left: 10%;
+  width: 80%; 
+  height: 30%; 
+  background: var(--bg-still); 
+  justify-content: center;
+  padding: 2rem; 
+  border-radius: 20px; 
+  color: var(--text);
+  align-items: center;
+}
+
 .secondary-btn {
-  width: 100%;
+  flex: 1;
   padding: 16px;
   background-color: var(--secondary);
   color: var(--select-color);

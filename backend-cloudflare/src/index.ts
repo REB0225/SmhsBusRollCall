@@ -254,7 +254,7 @@ app.post('/api/admin/config/accounts', authorizeAdmin, async (c) => {
   const existingUsernames = existing.map(u => u.username);
   const newUsernames = accountsIn.map((a: any) => a.username).filter(Boolean);
   
-  const toDelete = existingUsernames.filter(u => !newUsernames.includes(u) && u !== adminUser && u !== 'admin');
+  const toDelete = existingUsernames.filter(u => !newUsernames.includes(u) && u !== adminUser);
   toDelete.forEach(u => {
     queries.push(c.env.DB.prepare("DELETE FROM accounts WHERE username = ?").bind(u));
   });
@@ -263,7 +263,7 @@ app.post('/api/admin/config/accounts', authorizeAdmin, async (c) => {
     const { username, password, type, name } = a;
     if (username) {
         let finalType = type;
-        if (username === adminUser || username === 'admin') finalType = 'admin';
+        if (username === adminUser) finalType = 'admin';
         queries.push(c.env.DB.prepare("INSERT OR REPLACE INTO accounts (username, password, type, name) VALUES (?, ?, ?, ?)")
             .bind(username, password ?? "", finalType ?? "user", name ?? username));
     }

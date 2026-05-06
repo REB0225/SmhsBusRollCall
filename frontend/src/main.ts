@@ -131,6 +131,7 @@ class App {
   private initEventListeners() {
     // Login,Logout
     document.getElementById('login-btn')?.addEventListener('click', () => this.handleLogin());
+    document.getElementById('forgot-password')?.addEventListener('click', () => this.forgotPassword());
     document.getElementById('show-register-btn')?.addEventListener('click', () => {
         this.registerModal.style.display = 'flex';
         this.registerError.textContent = '';
@@ -737,6 +738,59 @@ class App {
     } else {
       img.textContent = 'logout';
     }
+  }
+
+  private openPopout(text: string, ltext: string, rtext: string) {
+    const popout = document.getElementById('the-popout')!;
+    const textobj = document.getElementById('popout-text') as HTMLElement;
+    const lbtn = document.getElementById('popout-left') as HTMLButtonElement;
+    const rbtn = document.getElementById('popout-right') as HTMLButtonElement;
+    var page = 0
+    lbtn.style.display = 'block';
+    popout.style.display = 'flex';
+    textobj.textContent = text;
+    lbtn.textContent = ltext;
+    rbtn.textContent = rtext;
+    lbtn.addEventListener('click', () => {
+      this.closePopout();
+      page = 0
+    });
+    rbtn.addEventListener('click', () => {
+      if(text === '忘記密碼？'){
+        page++
+        if(page == 1){
+          textobj.textContent = '你確定嗎？';
+          lbtn.textContent = '我再想想';
+          rbtn.textContent = '我確定';
+        } else if (page == 2){
+          textobj.textContent = '非常確定齁？';
+          lbtn.textContent = '我想一下';
+          rbtn.textContent = '我非常非常確定';
+        } else if (page == 3){
+          textobj.textContent = '要不要再想一下？';
+          lbtn.textContent = '好';
+          rbtn.textContent = '不要，我要改密碼';
+        } else if (page == 4){
+          textobj.textContent = '我沒有設計改密碼程式，自己去找管理員（老師或幹部）改。還有，🖕，下次給我記住密碼';
+          lbtn.style.display = 'none';
+          rbtn.textContent = '好，對不起';
+        } else {
+          this.closePopout();
+          page = 0
+        }
+      } else {
+        this.closePopout
+      }
+    });
+  }
+
+  private closePopout() {
+    const popout = document.getElementById('the-popout')!;
+    popout.style.display = 'none';
+  }
+
+  private forgotPassword() {
+    this.openPopout('忘記密碼？','沒有','對');
   }
 }
 
