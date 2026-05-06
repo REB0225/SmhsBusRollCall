@@ -15,9 +15,9 @@
                 <h1>管理員登入</h1>
                 <p class="subtitle">進入管理後台控制面板</p>
             </div>
-            <div class="settings-icon" onclick="openSettings()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </div>
+            <button class="icon-btn theme-toggle">
+                <span class="material-symbols-outlined theme-icon">moon_stars</span>
+            </button>
         </div>
         <div class="form-group">
             <label>使用者名稱</label>
@@ -40,8 +40,8 @@
                 <div style="font-size: 12px; color: var(--secondary-text); margin-top: 2px;">系統管理控制面板 | 目前時段: <span id="current-slot-display" style="color: var(--primary); font-weight: 600;">讀取中...</span></div>
             </div>
             <div>
-                <button id="themeToggle" class="icon-btn">
-                    <span id="theme-img" class="material-symbols-outlined">moon_stars</span>
+                <button class="icon-btn theme-toggle">
+                    <span class="material-symbols-outlined theme-icon">moon_stars</span>
                 </button>
                 <a class="logout-link" onclick="logout()">登出</a>
             </div>
@@ -333,21 +333,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- 3. Settings Modal -->
-    <div id="settingsModal">
-        <div class="modal-content">
-            <h2>連線設定</h2>
-            <div class="form-group">
-                <label>API 基礎網址</label>
-                <input type="text" id="apiUrlInput" placeholder="https://api.example.com">
-            </div>
-            <button onclick="saveSettings()" class="primary-btn">儲存並重新載入</button>
-            <button onclick="testConnection()" class="secondary-btn">測試連線</button>
-            <button onclick="document.getElementById('settingsModal').style.display='none'" class="secondary-btn" style="background: none;">取消</button>
-            <p id="testStatus" class="status-msg"></p>
         </div>
     </div>
 

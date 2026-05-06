@@ -128,10 +128,24 @@ input:focus, select:focus {
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
+  color: var(--primary);
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.v-stack{
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+}
+
+.h-stack{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .icon-btn:hover {
@@ -403,12 +417,17 @@ footer {
 }
 
 .icon-btn {
-  background: var(--bg-still);
+  background: var(--selector-bg);
   border: none;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Status Badges */

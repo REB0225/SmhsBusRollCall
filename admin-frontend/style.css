@@ -204,12 +204,14 @@ button:disabled { background-color: #d2d2d7; cursor: not-allowed; }
 }
 
 .icon-btn {
-  background: #bbbbbb;
+  background: var(--input-border);
   border: none;
   font-size: 20px;
   cursor: pointer;
   border-radius: 50%;
   transition: background-color 0.2s;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

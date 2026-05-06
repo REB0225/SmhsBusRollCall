@@ -40,27 +40,28 @@ let parsedData: { students: string | null, buses: string | null } = { students: 
 if (authToken) { showDashboard(); }
 
 // --- Dark mode toggle ---
-const themeToggle = document.getElementById('themeToggle') as HTMLElement;
-const themeImage = document.getElementById('theme-img') as HTMLElement;
+const themeToggles = document.querySelectorAll('.theme-toggle');
+const themeIcons = document.querySelectorAll('.theme-icon');
 const root = document.documentElement;
 
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme) root.setAttribute('data-theme', savedTheme);
 
-function updateThemeIcon(): void {
-    if (!themeImage) return;
-    const isDark = root.getAttribute('data-theme') === 'dark' || 
+function updateThemeIcons(): void {
+    const isDark = root.getAttribute('data-theme') === 'dark' ||
                   (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    themeImage.textContent = isDark ? 'brightness_7' : 'moon_stars';
+    themeIcons.forEach(icon => {
+        icon.textContent = isDark ? 'brightness_7' : 'moon_stars';
+    });
 }
 
-if (themeToggle) {
-    updateThemeIcon();
+updateThemeIcons();
 
-    themeToggle.addEventListener('click', () => {
+themeToggles.forEach(toggle => {
+    toggle.addEventListener('click', () => {
         const current = root.getAttribute('data-theme');
         let next: string;
-        
+
         if (!current) {
             // If no manual theme, toggle based on system preference
             next = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
@@ -70,10 +71,9 @@ if (themeToggle) {
 
         root.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
-        updateThemeIcon();
+        updateThemeIcons();
     });
-}
-
+});
 async function downloadListCSV(type: 'students' | 'buses', csvTypeParam?: string): Promise<void> {
     const csvType = csvTypeParam || (document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`) as HTMLSelectElement).value;
     const url = `${BASE_URL}/api/admin/config/${type}/csv?csvType=${encodeURIComponent(csvType)}`;
@@ -113,11 +113,6 @@ document.addEventListener('click', (e) => {
         renderSlots();
     }
 });
-
-function openSettings(): void {
-    (document.getElementById('settingsModal') as HTMLElement).style.display = 'flex';
-    (document.getElementById('apiUrlInput') as HTMLInputElement).value = BASE_URL;
-}
 
 function saveSettings(): void {
     const url = (document.getElementById('apiUrlInput') as HTMLInputElement).value.trim();
@@ -931,7 +926,6 @@ async function downloadWeekCSV(): Promise<void> {
 // Expose functions to window for inline onclick handlers
 (window as any).toggleDaysDropdown = toggleDaysDropdown;
 (window as any).downloadListCSV = downloadListCSV;
-(window as any).openSettings = openSettings;
 (window as any).saveSettings = saveSettings;
 (window as any).testConnection = testConnection;
 (window as any).login = login;
