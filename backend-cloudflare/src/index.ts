@@ -381,23 +381,23 @@ app.get('/api/admin/rollcall-csv', authorizeAdmin, async (c) => {
     const csvType = matchingConfig?.csvType || "arrival";
 
     const { results: students } = await c.env.DB.prepare("SELECT uid, name, badge, class, bus FROM students WHERE listType = ?").bind(csvType).all<any>();
-    const { results: records } = await c.env.DB.prepare("SELECT * FROM rollcalls WHERE date = ? AND timeSlot = ?")
+    const { results: records } = await c.env.DB.prepare("SELECT id, uid, timestamp, date, timeSlot, uploaderName FROM rollcalls WHERE date = ? AND timeSlot = ?") // Added uploaderName
         .bind(date, timeSlot)
         .all<any>();
     
-    let csv = '\uFEFFuid,name,badge,class,assigned_bus,status,timestamp\n';
+    let csv = '\uFEFFuid,name,badge,class,assigned_bus,status,timestamp,uploaderName\n'; // Added uploaderName header
     students.forEach((s: any) => {
         const record = records.find(r => r.uid === s.uid);
         const status = record ? '已簽到' : '未到';
         const time = record ? new Date(record.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '---';
-        csv += `${s.uid},${s.name},${s.badge},${s.class || ''},"${s.bus || ''}",${status},${time}\n`;
+        csv += `${s.uid},${s.name},${s.badge},${s.class || ''},"${s.bus || ''}",${status},${time},${record?.uploaderName || ''}\n`; // Added uploaderName
     });
 
     // Add extra records
     records.forEach(r => {
         if (!students.some((s: any) => s.uid === r.uid)) {
             const time = new Date(r.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-            csv += `${r.uid},未知/臨時,,,,,已簽到,${time}\n`;
+            csv += `${r.uid},未知/臨時,,,,,已簽到,${time},${r?.uploaderName || ''}\n`; // Added uploaderName
         }
     });
 
