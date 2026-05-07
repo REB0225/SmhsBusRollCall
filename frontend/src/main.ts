@@ -256,15 +256,54 @@ class App {
     this.loginView.style.display = 'none';
     this.mainView.style.display = 'flex';
     this.updateDisconnectBtn();
-    const csvType = await this.updateTimeslotDisplay();
+    
+    // 1. Load pending records FIRST to detect mismatch
     await this.loadPendingRecords();
+    
+    // 2. Determine which slot data we should be looking at
+    const csvType = await this.getEffectiveCsvType();
+    
+    // 3. Update UI and fetch data for that slot
+    await this.updateTimeslotDisplay();
     await this.fetchBuses(csvType);
     await this.fetchStudents(csvType);
+  }
+
+  private async getEffectiveCsvType(): Promise<string> {
+    const { csvType: currentCsvType } = await this.getCurrentSlot();
+    
+    if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
+      // If we have mismatched data, use the slot of the first pending record
+      try {
+        const { slots, default: defaultSlot } = await this.getCurrentSlotConfig();
+        const firstRecord = this.pendingRollCalls[0];
+        if (!firstRecord) return currentCsvType;
+        const slotInfo = this.getTimeSlotInfo(slots, defaultSlot, new Date(firstRecord.timestamp));
+        return slotInfo.csvType;
+      } catch (e) {
+        console.error("Failed to determine effective csvType from records:", e);
+      }
+    }
+    
+    return currentCsvType;
   }
 
   private async updateTimeslotDisplay() {
     const { slot, csvType } = await this.getCurrentSlot();
     const timeslotText = document.getElementById('timeslot-text')!;
+    
+    if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
+        // Find the slot for the mismatched records
+        try {
+            const { slots, default: defaultSlot } = await this.getCurrentSlotConfig();
+            const firstRecord = this.pendingRollCalls[0];
+            if (!firstRecord) throw new Error("No record");
+            const slotInfo = this.getTimeSlotInfo(slots, defaultSlot, new Date(firstRecord.timestamp));
+            timeslotText.textContent = `${slotInfo.label} (舊資料)`;
+            return slotInfo.csvType;
+        } catch (e) {}
+    }
+
     timeslotText.textContent = slot;
     return csvType;
   }
@@ -397,7 +436,7 @@ class App {
     this.updateUIColors();
 
     // 3. Auto Record logic
-    this.addPendingRecord(uid, this.currentStudent.name, this.currentStudent.badge || "---", this.currentStudent.class || "---", this.currentStudent.bus || "未知");
+    await this.addPendingRecord(uid, this.currentStudent.name, this.currentStudent.badge || "---", this.currentStudent.class || "---", this.currentStudent.bus || "未知");
   }
 
   private displayStudent(s: Student) {
@@ -488,13 +527,13 @@ class App {
     }
   }
 
-  private addPendingRecord(uid: string, name: string, badge: string, studentClass: string, studentBus: string) {
+  private async addPendingRecord(uid: string, name: string, badge: string, studentClass: string, studentBus: string) {
     const timestamp = new Date().toISOString();
     const selectedBusAtTimeOfScan = this.busSelect.value;
     // Avoid duplicate UIDs in the same session
     if (!this.pendingRollCalls.some(r => r.uid === uid)) {
         this.pendingRollCalls.push({ uid, timestamp, name, badge, class: studentClass, studentBus, selectedBusAtTimeOfScan });
-        this.updatePendingUI();
+        await this.updatePendingUI();
     }
   }
 
@@ -513,7 +552,7 @@ class App {
         );
         this.isMismatchedData = checks.some(same => !same);
 
-        this.updatePendingUI();
+        await this.updatePendingUI();
           if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
             setTimeout(() => this.openReview(), 500);
           }
@@ -523,14 +562,29 @@ class App {
     }
   }
 
-  private updatePendingUI() {
+  private async updatePendingUI() {
     const count = this.pendingRollCalls.length;
     this.pendingCount.textContent = count.toString();
     this.syncFooter.style.display = count > 0 ? 'block' : 'none';
     
+    const wasMismatched = this.isMismatchedData;
+
     // Clear mismatch flag if list is empty
     if (count === 0) {
         this.isMismatchedData = false;
+    } else {
+        // Re-evaluate mismatch status
+        const checks = await Promise.all(
+          this.pendingRollCalls.map(r => this.isSameSlot(r.timestamp))
+        );
+        this.isMismatchedData = checks.some(same => !same);
+    }
+    
+    // If we just resolved the mismatch, restore current slot data
+    if (wasMismatched && !this.isMismatchedData) {
+        const csvType = await this.updateTimeslotDisplay();
+        await this.fetchBuses(csvType);
+        await this.fetchStudents(csvType);
     }
     
     this.savePendingRecords();
@@ -593,11 +647,11 @@ class App {
             </div>
             <button class="text-btn delete-btn" data-index="${index}">刪除</button>
         `;
-        item.querySelector('.delete-btn')?.addEventListener('click', (e: any) => {
+        item.querySelector('.delete-btn')?.addEventListener('click', async (e: any) => {
             const idx = parseInt(e.target.dataset.index);
             this.pendingRollCalls.splice(idx, 1);
             this.openReview(false); // Refresh list without resetting bus selector
-            this.updatePendingUI();
+            await this.updatePendingUI();
         });
         this.reviewList.appendChild(item);
     });
@@ -630,11 +684,11 @@ class App {
     logoutButton.style.color = 'white';
     logoutButton.style.fontWeight = 'bold';
 
-    logoutButton.addEventListener('click', () => {
+    logoutButton.addEventListener('click', async () => {
         // Clear pending roll calls and then logout
         this.pendingRollCalls = []; // Clear the array
         this.savePendingRecords(); // Save the cleared state
-        this.updatePendingUI(); // Update UI to reflect no pending items
+        await this.updatePendingUI(); // Update UI to reflect no pending items
         this.logout(); // Perform the logout
         this.reviewSheet.style.display = 'none'; // Close the review modal
     });
@@ -700,7 +754,7 @@ class App {
 
         if (res.ok) {
             this.pendingRollCalls = this.pendingRollCalls.filter(r => !recordsToSync.includes(r));
-            this.updatePendingUI();
+            await this.updatePendingUI();
             this.closeReview();
             alert("同步完成！");
         } else {
