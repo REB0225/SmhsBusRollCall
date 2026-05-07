@@ -412,8 +412,11 @@ class App {
 
     const photoEl = document.getElementById('student-photo') as HTMLImageElement;
     if (s.badge !== "---") {
-        photoEl.src = ``;
+        photoEl.style.display = 'none';
         this.fetchPhotoSecure(s.uid);
+        photoEl.onload = () => {
+          photoEl.style.display = 'block';
+        }
     } else {
         photoEl.src = `https://ui-avatars.com/api/?name=?&background=random`;
     }
