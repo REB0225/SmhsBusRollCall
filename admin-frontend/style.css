@@ -85,6 +85,12 @@ body {
     padding: 20px;
 }
 
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1; /* keeps it above scrolling rows */
+}
+
 #loginSection {
     max-width: 400px;
     margin: 100px auto 0;
@@ -179,8 +185,8 @@ button:disabled { background-color: #d2d2d7; cursor: not-allowed; }
 
 .photo-search-grid{
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-    gap: 20px; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
     align-items: flex-start; 
     margin-bottom: 2rem;
 }
@@ -252,12 +258,17 @@ button:disabled { background-color: #d2d2d7; cursor: not-allowed; }
     margin-bottom: 2rem; }
 .config-card h3 { margin-top: 0; font-size: 18px; margin-bottom: 1rem; }
 
-.table-container { margin-top: 1rem; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+.table-container { 
+    margin-top: 1rem; 
+    overflow-x: auto; 
+    border: 1px solid 
+    var(--border-color); 
+    border-radius: 10px; }
+table { width: 100%; min-width: 600px; overflow-x: scroll; border-collapse: collapse; font-size: 14px; text-align: left; }
 th { background: var(--th-bg); padding: 12px; font-weight: 600; border-bottom: 1px solid var(--border-color); }
 td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
 
-.table-input { padding: 6px 10px !important; font-size: 13px !important; margin: 0; border-radius: 6px; }
+.table-input { padding: 6px 10px; font-size: 13px; margin: 0; border-radius: 6px; }
 .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
 .badge-admin { background: #e1f5fe; color: #01579b; }
 .badge-user { background: var(--bg); color: var(--secondary-text); }

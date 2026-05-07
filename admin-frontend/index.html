@@ -139,23 +139,25 @@
                 <div>
                     <h1>相片庫</h1>
                     <p class="subtitle">查看與管理資料庫中的學生相片</p>
-                    <input type="text" id="photo-search" placeholder="搜尋姓名、UID 或學號..." oninput="filterPhotos()" class="table-input" style="max-width: 400px; padding: 12px 15px !important;">
+                    <input type="text" id="photo-search" placeholder="搜尋姓名、UID 或學號..." oninput="filterPhotos()" class="table-input" style="width: 100%; max-width: 400px; padding: 12px 15px !important;">
                 </div>
-                <div class="config-card" style="margin: 0; padding: 1.2rem; border-color: var(--primary);">
-                    <h3 style="color: var(--primary); margin-top: 0;">相片上傳</h3>
-                    <div style="margin-bottom: 15px;">
-                        <label style="font-size: 11px; font-weight: 600;">單筆上傳</label>
-                        <input type="text" id="photo-upload-uid" placeholder="輸入 UID" class="table-input" style="margin-bottom: 5px;">
-                        <input type="file" id="photo-upload-file" accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
-                        <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="padding: 8px; font-size: 12px;">上傳至資料庫</button>
+                <div style="display: flex; justify-content: flex-end;">
+                    <div class="config-card" style="margin: 0; padding: 1.2rem; border-color: var(--primary);">
+                        <h3 style="color: var(--primary); margin-top: 0;">相片上傳</h3>
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 11px; font-weight: 600;">單筆上傳</label>
+                            <input type="text" id="photo-upload-uid" placeholder="輸入 UID" class="table-input" style="margin-bottom: 5px;">
+                            <input type="file" id="photo-upload-file" accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
+                            <button onclick="uploadStudentPhoto()" id="photo-upload-btn" class="secondary-btn" style="padding: 8px; font-size: 12px;">上傳至資料庫</button>
+                        </div>
+                        <div class="small-border">
+                            <label style="font-size: 11px; font-weight: 600;">批量上傳 (檔名需為學號)</label>
+                            <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
+                            <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 8px; font-size: 12px;">開始批量上傳</button>
+                        </div>
+                        <div id="bulk-upload-status" class="status-msg" style="font-size: 11px; max-height: 80px; overflow-y: auto;"></div>
+                        <p id="status-photo-upload" class="status-msg" style="font-size: 11px;"></p>
                     </div>
-                    <div class="small-border">
-                        <label style="font-size: 11px; font-weight: 600;">批量上傳 (檔名需為學號)</label>
-                        <input type="file" id="photo-bulk-input" multiple accept=".jpg,.jpeg" style="font-size: 11px; margin-bottom: 5px;">
-                        <button onclick="uploadBulkPhotos()" id="bulk-upload-btn" class="primary-btn" style="padding: 8px; font-size: 12px;">開始批量上傳</button>
-                    </div>
-                    <div id="bulk-upload-status" class="status-msg" style="font-size: 11px; max-height: 80px; overflow-y: auto;"></div>
-                    <p id="status-photo-upload" class="status-msg" style="font-size: 11px;"></p>
                 </div>
             </div>
             <div id="photo-grid" class="photo-grid"></div>
@@ -193,7 +195,6 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h3 style="margin: 0;">時段配置</h3>
                         <div style="display: flex; gap: 10px;">
-                            <button onclick="resetToDefaults()" class="secondary-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">重設預設</button>
                             <button onclick="saveSlots()" id="save-slots-btn" class="primary-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">儲存配置</button>
                         </div>
                     </div>
@@ -263,7 +264,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                         <div>
                             <h3>學生名單上傳</h3>
-                            <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 10px;">必要欄位: <strong>uid, name, badge, class, bus</strong></p>
+                            <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 10px; height: 35px; align-items: center;">必要欄位: <strong>uid, name, badge, class, bus</strong></p>
                             <div class="form-group">
                                 <label>目標名單</label>
                                 <select id="student-list-type" class="table-input" onchange="resetStudentPreview()">
@@ -291,7 +292,7 @@
                         </div>
                         <div>
                             <h3>車次名單上傳</h3>
-                            <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 10px;">必要欄位: <strong>bus, overflow</strong></p>
+                            <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 10px; height: 35px; align-items: center;">必要欄位: <strong>bus, overflow</strong></p>
                             <div class="form-group">
                                 <label>目標車次列表</label>
                                 <select id="bus-list-type" class="table-input" onchange="resetBusPreview()">
@@ -320,7 +321,7 @@
                     </div>
                 </div>
 
-                <!-- 0. System Placeholder -->
+                <!-- 4. System Placeholder -->
                 <div class="config-card" style="grid-column: 1 / -1;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
