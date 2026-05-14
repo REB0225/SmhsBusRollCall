@@ -1,3 +1,7 @@
+import Navigo from 'navigo';
+
+const router = new Navigo("/", { hash: false });
+
 const BASE_URL: string = localStorage.getItem('apiUrl') || 
                 (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:5001' : 'https://bus-rollcall-backend.s211009.workers.dev');
 
@@ -36,46 +40,142 @@ let allStudentsList: any[] = [];
 let parsedData: { students: string | null, buses: string | null } = { students: null, buses: null };
 let pendingAccounts: Account[] = [];
 let pendingPollingInterval: any = null;
+let isDashboardInitialized = false;
 
 (document.getElementById('datePicker') as HTMLInputElement).valueAsDate = new Date();
 
-if (authToken) { showDashboard(); }
-
-// --- Dark mode toggle ---
-const themeToggles = document.querySelectorAll('.theme-toggle');
-const themeIcons = document.querySelectorAll('.theme-icon');
-const root = document.documentElement;
-
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme) root.setAttribute('data-theme', savedTheme);
-
-function updateThemeIcons(): void {
-    const isDark = root.getAttribute('data-theme') === 'dark' ||
-                  (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    themeIcons.forEach(icon => {
-        icon.textContent = isDark ? 'brightness_7' : 'moon_stars';
-    });
+// --- Section Management ---
+function showSection(sectionId: string): void {
+    const loginSec = document.getElementById('loginSection');
+    const dashSec = document.getElementById('dashboardSection');
+    if (loginSec) loginSec.style.display = sectionId === 'loginSection' ? 'block' : 'none';
+    if (dashSec) dashSec.style.display = sectionId === 'dashboardSection' ? 'block' : 'none';
 }
 
-updateThemeIcons();
-
-themeToggles.forEach(toggle => {
-    toggle.addEventListener('click', () => {
-        const current = root.getAttribute('data-theme');
-        let next: string;
-
-        if (!current) {
-            // If no manual theme, toggle based on system preference
-            next = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
-        } else {
-            next = current === 'dark' ? 'light' : 'dark';
+// --- Routing ---
+router.on({
+    '/': () => {
+        if (authToken) router.navigate('/export');
+        else router.navigate('/login');
+    },
+    '/login': () => {
+        if (authToken) router.navigate('/export');
+        else showSection('loginSection');
+    },
+    '/export': () => {
+        if (!authToken) router.navigate('/login');
+        else {
+            showSection('dashboardSection');
+            switchTab('export');
+            ensureDashboardInitialized();
         }
-
-        root.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        updateThemeIcons();
-    });
+    },
+    '/temp-riders': () => {
+        if (!authToken) router.navigate('/login');
+        else {
+            showSection('dashboardSection');
+            switchTab('temp-riders');
+            ensureDashboardInitialized();
+            fetchTempRiders(); 
+            fetchBusesForTemp();
+        }
+    },
+    '/photos': () => {
+        if (!authToken) router.navigate('/login');
+        else {
+            showSection('dashboardSection');
+            switchTab('photos');
+            ensureDashboardInitialized();
+            closePhotoFolder(false);
+        }
+    },
+    '/photos/:folder': (params) => {
+        const folder = params?.data?.folder;
+        if (!authToken) router.navigate('/login');
+        else {
+            showSection('dashboardSection');
+            switchTab('photos');
+            ensureDashboardInitialized();
+            if (folder) openPhotoFolder(decodeURIComponent(folder), false);
+        }
+    },
+    '/config': () => {
+        if (!authToken) router.navigate('/login');
+        else {
+            showSection('dashboardSection');
+            switchTab('config');
+            ensureDashboardInitialized();
+            fetchAccounts(); 
+            fetchSlots();
+        }
+    }
 });
+
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+    // Theme initialization
+    const themeToggles = document.querySelectorAll('.theme-toggle');
+    const themeIcons = document.querySelectorAll('.theme-icon');
+    const root = document.documentElement;
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) root.setAttribute('data-theme', savedTheme);
+
+    function updateThemeIcons(): void {
+        const isDark = root.getAttribute('data-theme') === 'dark' ||
+                      (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        themeIcons.forEach(icon => {
+            icon.textContent = isDark ? 'brightness_7' : 'moon_stars';
+        });
+    }
+
+    updateThemeIcons();
+
+    themeToggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            const current = root.getAttribute('data-theme');
+            let next: string;
+
+            if (!current) {
+                next = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
+            } else {
+                next = current === 'dark' ? 'light' : 'dark';
+            }
+
+            root.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeIcons();
+        });
+    });
+
+    // Add tab click listeners
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const path = (tab as HTMLElement).dataset.path;
+            if (path && router.getCurrentLocation().url !== path.substring(1)) {
+                router.navigate(path);
+            }
+        });
+    });
+
+    router.resolve();
+});
+
+function ensureDashboardInitialized(): void {
+    if (isDashboardInitialized) return;
+    const welcome = document.getElementById('welcomeText');
+    if (welcome) welcome.textContent = `您好，${adminName}`;
+    const placeholder = document.getElementById('placeholder-img') as HTMLImageElement;
+    if (placeholder) placeholder.src = `${BASE_URL}/api/placeholder?t=${Date.now()}`;
+    updateCurrentSlotDisplay();
+    fetchGlobalStudents();
+    fetchPendingAccounts();
+    
+    if (pendingPollingInterval) clearInterval(pendingPollingInterval);
+    pendingPollingInterval = setInterval(fetchPendingAccounts, 30000);
+    
+    isDashboardInitialized = true;
+}
 async function downloadListCSV(type: 'students' | 'buses', csvTypeParam?: string): Promise<void> {
     const csvType = csvTypeParam || (document.getElementById(`${type === 'students' ? 'student' : 'bus'}-list-type`) as HTMLSelectElement).value;
     const url = `${BASE_URL}/api/admin/config/${type}/csv?csvType=${encodeURIComponent(csvType)}`;
@@ -265,28 +365,17 @@ async function login(): Promise<void> {
             authToken = data.token;
             adminName = data.user.name;
             adminUsername = user;
-            showDashboard();
+            router.navigate('/export');
         } else { error.textContent = data.error || '登入失敗'; }
     } catch (err) { error.textContent = '網路錯誤'; }
     finally { btn.disabled = false; }
 }
 
-function logout(): void { localStorage.removeItem('adminToken'); location.reload(); }
-
-function showDashboard(): void {
-    (document.getElementById('loginSection') as HTMLElement).style.display = 'none';
-    (document.getElementById('dashboardSection') as HTMLElement).style.display = 'block';
-    (document.getElementById('welcomeText') as HTMLElement).textContent = `您好，${adminName}`;
-    (document.getElementById('placeholder-img') as HTMLImageElement).src = `${BASE_URL}/api/placeholder?t=${Date.now()}`;
-    updateCurrentSlotDisplay();
-    fetchAccounts();
-    fetchSlots();
-    fetchPhotos();
-    fetchGlobalStudents();
-
-    fetchPendingAccounts();
-    if (pendingPollingInterval) clearInterval(pendingPollingInterval);
-    pendingPollingInterval = setInterval(fetchPendingAccounts, 30000);
+function logout(): void { 
+    localStorage.removeItem('adminToken'); 
+    authToken = '';
+    isDashboardInitialized = false;
+    router.navigate('/login'); 
 }
 
 async function updateCurrentSlotDisplay(): Promise<void> {
@@ -328,7 +417,9 @@ function switchTab(tabName: string): void {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
     const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(t => { if((t as HTMLElement).getAttribute('onclick')?.includes(`'${tabName}'`)) t.classList.add('active'); });
+    tabs.forEach(t => { 
+        if((t as HTMLElement).dataset.path === `/${tabName}`) t.classList.add('active'); 
+    });
     
     const targetContent = document.getElementById(`${tabName}Tab`);
     if(!targetContent) {
@@ -337,10 +428,6 @@ function switchTab(tabName: string): void {
     } else {
         targetContent.classList.add('active');
     }
-
-    if (tabName === 'temp-riders') { fetchTempRiders(); fetchBusesForTemp(); }
-    if (tabName === 'photos') { fetchPhotos(); }
-    if (tabName === 'config') { fetchAccounts(); fetchSlots(); }
 }
 
 async function fetchAccounts(): Promise<void> {
@@ -569,7 +656,11 @@ function resetToDefaults(): void {
     }
 }
 
-async function openPhotoFolder(cls: string): Promise<void> {
+async function openPhotoFolder(cls: string, shouldNavigate = true): Promise<void> {
+    if (shouldNavigate) {
+        router.navigate(`/photos/${encodeURIComponent(cls)}`);
+        return;
+    }
     currentPhotoFolder = cls;
     const grid = document.getElementById('photo-grid') as HTMLElement;
 
@@ -593,7 +684,11 @@ async function openPhotoFolder(cls: string): Promise<void> {
     }
 }
 
-function closePhotoFolder(): void {
+function closePhotoFolder(shouldNavigate = true): void {
+    if (shouldNavigate) {
+        router.navigate('/photos');
+        return;
+    }
     currentPhotoFolder = null;
     renderPhotos(allPhotos);
 }
@@ -1039,7 +1134,6 @@ async function downloadWeekCSV(): Promise<void> {
 (window as any).testConnection = testConnection;
 (window as any).login = login;
 (window as any).logout = logout;
-(window as any).showDashboard = showDashboard;
 (window as any).uploadSystemPlaceholder = uploadSystemPlaceholder;
 (window as any).switchTab = switchTab;
 (window as any).renderAccounts = renderAccounts;

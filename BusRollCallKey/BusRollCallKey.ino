@@ -28,17 +28,17 @@
 #include <BLE2902.h>
 
 // ── Pin definitions ──────────────────────────────────────────────────────────
-#define SS_PIN      5
-#define SCK_PIN     6
-#define MOSI_PIN    7
-#define MISO_PIN    8
-#define RST_PIN    20
-#define BATTERY_PIN 3
-#define BUZZER_PIN  1
+#define SS_PIN      32
+#define SCK_PIN     33
+#define MOSI_PIN    25
+#define MISO_PIN    26
+#define RST_PIN     27
+#define BATTERY_PIN 17
+#define BUZZER_PIN  16
 
 // ── BLE UUIDs ────────────────────────────────────────────────────────────────
-#define SERVICE_UUID         "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID  "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define SERVICE_UUID         "4fafc201-1fb5-459e-8fcc-c5c9c331914c"
+#define CHARACTERISTIC_UUID  "beb5483e-36e1-4688-b7f5-ea07361b26ac"
 #define BATTERY_SERVICE_UUID          (uint16_t)0x180F
 #define BATTERY_LEVEL_CHARACTERISTIC  (uint16_t)0x2A19
 
@@ -61,7 +61,7 @@ void buzzerTick() {
 
   if (!bz.inGap) {
     // Beep just finished → go silent
-    digitalWrite(BUZZER_PIN, LOW);
+    noTone(BUZZER_PIN);
     bz.remaining--;
     if (bz.remaining <= 0) {
       bz.active = false;
@@ -71,7 +71,7 @@ void buzzerTick() {
     bz.nextAt = millis() + bz.gap;
   } else {
     // Gap finished → start next beep
-    digitalWrite(BUZZER_PIN, HIGH);
+    tone(BUZZER_PIN, 2000);
     bz.inGap  = false;
     bz.nextAt = millis() + bz.duration;
   }
@@ -83,8 +83,8 @@ void startBeep(int count, int duration, int gap) {
   duration = constrain(duration, 10, 5000);
   gap      = constrain(gap,      0,  5000);
 
-  digitalWrite(BUZZER_PIN, LOW);       // kill any ongoing tone instantly
-  digitalWrite(BUZZER_PIN, HIGH);   // first beep starts immediately
+  noTone(BUZZER_PIN);       // kill any ongoing tone instantly
+  tone(BUZZER_PIN, 2000);   // first beep starts immediately
 
   bz.active    = true;
   bz.inGap     = false;
@@ -139,10 +139,8 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pChar) override {
     String value = pChar->getValue().c_str();
     value.trim();
-    Serial.println("BLE Write: " + value);
     if (value.startsWith("BEEP:")) {
       bool ok = handleBeepCommand(value);
-      Serial.println(ok ? "Beep started." : "Bad beep command.");
     }
   }
 };
@@ -150,11 +148,9 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) override {
     deviceConnected = true;
-    Serial.println("BLE Client Connected");
   }
   void onDisconnect(BLEServer *pServer) override {
     deviceConnected = false;
-    Serial.println("BLE Client Disconnected");
   }
 };
 
@@ -209,7 +205,6 @@ void setup() {
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
 
-  Serial.println("BLE Ready (C3). Waiting for connection...");
   startSingleBeep(100); // Startup beep
 }
 
@@ -220,7 +215,6 @@ void loop() {
   if (!deviceConnected && oldDeviceConnected) {
     delay(500);
     pServer->startAdvertising();
-    Serial.println("Restarted Advertising...");
     oldDeviceConnected = deviceConnected;
   }
 
@@ -253,8 +247,7 @@ void loop() {
   char buffer[11];
   sprintf(buffer, "%010u", card_ID);
   String output = String(buffer);
-  Serial.println("Scanned ID: " + output);
-  Serial.println(String(deviceConnected));
+  Serial.println(output);
   if (!deviceConnected){
     startSingleBeep(100); // Scan beep (non-blocking)
   }

@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>海星校車點名系統管理後台</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <!-- 1. Login Section -->
-    <div class="container" id="loginSection">
+    <div class="container" id="loginSection" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="flex: 1;">
                 <h1>管理員登入</h1>
@@ -55,10 +55,10 @@
 
         <!-- Navigation -->
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('export')">匯出記錄</div>
-            <div class="tab" onclick="switchTab('temp-riders')">臨時搭乘</div>
-            <div class="tab" onclick="switchTab('photos')">相片庫</div>
-            <div class="tab" onclick="switchTab('config')">系統設定</div>
+            <div class="tab" data-path="/export">匯出記錄</div>
+            <div class="tab" data-path="/temp-riders">臨時搭乘</div>
+            <div class="tab" data-path="/photos">相片庫</div>
+            <div class="tab" data-path="/config">系統設定</div>
         </div>
 
         <!-- Tab: Export -->
@@ -369,6 +369,6 @@
         </div>
     </div>
 
-    <script type="module" src="script.ts"></script>
+    <script type="module" src="/script.ts"></script>
 </body>
 </html>
