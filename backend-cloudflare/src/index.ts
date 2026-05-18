@@ -514,7 +514,7 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
     
     // 1. Fetch ALL photos from the database to enable cross-list matching (by UID and Badge)
     const { results: allPhotos } = await c.env.DB.prepare(
-        "SELECT uid, badge, photo, name, listType FROM students WHERE photo IS NOT NULL"
+        "SELECT uid, badge, name, listType FROM students WHERE photo IS NOT NULL"
     ).all<any>();
     
     const uidPhotoMap = new Map();
