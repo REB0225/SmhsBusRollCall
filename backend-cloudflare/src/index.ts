@@ -512,6 +512,16 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
     const { students, csvType } = await c.req.json();
     const type = csvType || "arrival";
     
+    // Deduplicate new list and track new badges
+    const newStudentsMap = new Map();
+    const newBadgesSet = new Set();
+    students.forEach((s: any) => {
+        if (s.uid) {
+            newStudentsMap.set(s.uid, s);
+            if (s.badge) newBadgesSet.add(s.badge);
+        }
+    });
+
     // 1. Rename current list to a temp holding list instead of deleting
     await c.env.DB.prepare("UPDATE students SET listType = 'temp_old' WHERE listType = ?").bind(type).run();
 
