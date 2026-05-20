@@ -511,8 +511,19 @@ app.get('/api/admin/config/buses/csv', authorizeAdmin, async (c) => {
 app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
     const { students, csvType } = await c.req.json();
     const type = csvType || "arrival";
+
+    const { results: allPhotos } = await c.env.DB.prepare(
+        "SELECT uid, badge, name, listType, photo FROM students WHERE photo IS NOT NULL"
+    ).all<any>();
     
-    // Deduplicate new list and track new badges
+    const uidPhotoMap = new Map();
+    const badgePhotoMap = new Map();
+    allPhotos.forEach(p => {
+        if (p.uid) uidPhotoMap.set(p.uid, p.photo);
+        if (p.badge) badgePhotoMap.set(p.badge, p.photo);
+    });
+
+    // 2. Deduplicate new list and track new badges
     const newStudentsMap = new Map();
     const newBadgesSet = new Set();
     students.forEach((s: any) => {
@@ -521,6 +532,18 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
             if (s.badge) newBadgesSet.add(s.badge);
         }
     });
+
+    // 3. Identify students to "rescue" to unknown (had photo in THIS list, now gone from CSV by BOTH UID and Badge)
+    const rescuedQueries = [];
+    const currentListPhotos = allPhotos.filter(p => p.listType === type);
+    for (const old of currentListPhotos) {
+        const stillInList = newStudentsMap.has(old.uid) || (old.badge && newBadgesSet.has(old.badge));
+        if (!stillInList) {
+            rescuedQueries.push(
+                c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, 'unknown', ?, ?, '未知', ?)")
+                .bind(old.uid ?? null, old.name ?? null, old.badge ?? "", old.photo ?? null)
+            );
+        }
 
     // 1. Rename current list to a temp holding list instead of deleting
     await c.env.DB.prepare("UPDATE students SET listType = 'temp_old' WHERE listType = ?").bind(type).run();
