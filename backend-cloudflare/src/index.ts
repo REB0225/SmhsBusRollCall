@@ -512,73 +512,46 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
     const { students, csvType } = await c.req.json();
     const type = csvType || "arrival";
     
-    // 1. Fetch ALL photos from the database to enable cross-list matching (by UID and Badge)
-    const { results: allPhotos } = await c.env.DB.prepare(
-        "SELECT uid, badge, name, listType, photo FROM students WHERE photo IS NOT NULL"
-    ).all<any>();
-    
-    const uidPhotoMap = new Map();
-    const badgePhotoMap = new Map();
-    allPhotos.forEach(p => {
-        if (p.uid) uidPhotoMap.set(p.uid, p.photo);
-        if (p.badge) badgePhotoMap.set(p.badge, p.photo);
-    });
+    // 1. Rename current list to a temp holding list instead of deleting
+    await c.env.DB.prepare("UPDATE students SET listType = 'temp_old' WHERE listType = ?").bind(type).run();
 
-    // 2. Deduplicate new list and track new badges
-    const newStudentsMap = new Map();
-    const newBadgesSet = new Set();
-    students.forEach((s: any) => {
-        if (s.uid) {
-            newStudentsMap.set(s.uid, s);
-            if (s.badge) newBadgesSet.add(s.badge);
-        }
-    });
-
-    // 3. Identify students to "rescue" to unknown (had photo in THIS list, now gone from CSV by BOTH UID and Badge)
-    const rescuedQueries = [];
-    const currentListPhotos = allPhotos.filter(p => p.listType === type);
-    for (const old of currentListPhotos) {
-        const stillInList = newStudentsMap.has(old.uid) || (old.badge && newBadgesSet.has(old.badge));
-        if (!stillInList) {
-            rescuedQueries.push(
-                c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, 'unknown', ?, ?, '未知', ?)")
-                .bind(old.uid ?? null, old.name ?? null, old.badge ?? "", old.photo ?? null)
-            );
-        }
+    // 2. Insert all new students WITHOUT photos
+    const newStudentsArray = Array.from(newStudentsMap.values());
+    for (let i = 0; i < newStudentsArray.length; i += 100) {
+        const chunk = newStudentsArray.slice(i, i + 100);
+        await c.env.DB.batch(chunk.map((s: any) =>
+            c.env.DB.prepare("INSERT INTO students (uid, listType, name, badge, class, bus, photo) VALUES (?, ?, ?, ?, ?, ?, NULL)")
+            .bind(s.uid ?? null, type, s.name ?? null, s.badge ?? "", s.class ?? "", s.bus ?? "")
+        ));
     }
 
-    // 4. Clean up "unknown" records that are now identified in the new list
-    const unknownToCleanup = allPhotos.filter(p => p.listType === 'unknown' && (newStudentsMap.has(p.uid) || (p.badge && newBadgesSet.has(p.badge))));
-    const cleanupQueries = unknownToCleanup.map(p => 
-        c.env.DB.prepare("DELETE FROM students WHERE uid = ? AND listType = 'unknown'").bind(p.uid ?? null)
-    );
+    // 3. Copy photos by UID match — entirely within the DB, no data leaves
+    await c.env.DB.prepare(`
+        UPDATE students SET photo = (
+            SELECT photo FROM students s2 
+            WHERE s2.uid = students.uid AND s2.listType = 'temp_old' AND s2.photo IS NOT NULL LIMIT 1
+        ) WHERE listType = ? AND photo IS NULL
+    `).bind(type).run();
 
-    // 5. Clear the current list
-    await c.env.DB.prepare("DELETE FROM students WHERE listType = ?").bind(type ?? "arrival").run();
+    // 4. Copy photos by badge match for any still missing
+    await c.env.DB.prepare(`
+        UPDATE students SET photo = (
+            SELECT photo FROM students s2 
+            WHERE s2.badge = students.badge AND s2.listType = 'temp_old' AND s2.photo IS NOT NULL LIMIT 1
+        ) WHERE listType = ? AND photo IS NULL AND badge != ''
+    `).bind(type).run();
 
-    // 6. Insert new students, matching photos by UID first, then Badge
-    const insertQueries = Array.from(newStudentsMap.values()).map((s: any) => {
-        const photo = uidPhotoMap.get(s.uid) ?? (s.badge ? (badgePhotoMap.get(s.badge) ?? null) : null);
-        return c.env.DB.prepare("INSERT INTO students (uid, listType, name, badge, class, bus, photo) VALUES (?, ?, ?, ?, ?, ?, ?)")
-            .bind(s.uid ?? null, type ?? "arrival", s.name ?? null, s.badge ?? "", s.class ?? "", s.bus ?? "", photo);
-    });
+    // 5. Rescue students removed from the list who had photos → move to unknown
+    await c.env.DB.prepare(`
+        INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo)
+        SELECT uid, 'unknown', name, badge, '未知', photo FROM students
+        WHERE listType = 'temp_old' AND photo IS NOT NULL
+        AND uid NOT IN (SELECT uid FROM students WHERE listType = ?)
+        AND (badge = '' OR badge NOT IN (SELECT badge FROM students WHERE listType = ? AND badge != ''))
+    `).bind(type, type).run();
 
-    // Execute batches
-    if (cleanupQueries.length > 0) {
-        for (let i = 0; i < cleanupQueries.length; i += 100) {
-            await c.env.DB.batch(cleanupQueries.slice(i, i + 100));
-        }
-    }
-
-    if (rescuedQueries.length > 0) {
-        for (let i = 0; i < rescuedQueries.length; i += 100) {
-            await c.env.DB.batch(rescuedQueries.slice(i, i + 100));
-        }
-    }
-
-    for (let i = 0; i < insertQueries.length; i += 100) {
-        await c.env.DB.batch(insertQueries.slice(i, i + 100));
-    }
+    // 6. Delete the temp holding list
+    await c.env.DB.prepare("DELETE FROM students WHERE listType = 'temp_old'").run();
     
     return c.json({ success: true, count: newStudentsMap.size, rescued: rescuedQueries.length });
 });
