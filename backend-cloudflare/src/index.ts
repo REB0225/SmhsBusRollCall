@@ -533,21 +533,21 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
         ));
     }
 
-    // 4. Copy photos by UID match — entirely within the DB, no data leaves
+    // 4. Copy photos by UID match from any other listType — entirely within the DB
     await c.env.DB.prepare(`
         UPDATE students SET photo = (
             SELECT photo FROM students s2 
-            WHERE s2.uid = students.uid AND s2.listType = 'temp_old' AND s2.photo IS NOT NULL LIMIT 1
+            WHERE s2.uid = students.uid AND s2.listType != ? AND s2.photo IS NOT NULL LIMIT 1
         ) WHERE listType = ? AND photo IS NULL
-    `).bind(type).run();
+    `).bind(type, type).run();
 
-    // 5. Copy photos by badge match for any still missing
+    // 5. Copy photos by badge match for any still missing from any other listType
     await c.env.DB.prepare(`
         UPDATE students SET photo = (
             SELECT photo FROM students s2 
-            WHERE s2.badge = students.badge AND s2.listType = 'temp_old' AND s2.photo IS NOT NULL LIMIT 1
+            WHERE s2.badge = students.badge AND s2.listType != ? AND s2.photo IS NOT NULL LIMIT 1
         ) WHERE listType = ? AND photo IS NULL AND badge != ''
-    `).bind(type).run();
+    `).bind(type, type).run();
 
     // 6. Rescue students removed from the list who had photos → move to unknown
     const rescueResult = await c.env.DB.prepare(`
@@ -556,6 +556,16 @@ app.post('/api/admin/config/students', authorizeAdmin, async (c) => {
         WHERE listType = 'temp_old' AND photo IS NOT NULL
         AND uid NOT IN (SELECT uid FROM students WHERE listType = ?)
         AND (badge = '' OR badge NOT IN (SELECT badge FROM students WHERE listType = ? AND badge != ''))
+    `).bind(type, type).run();
+
+    // 6.5 Clean up redundant unknown placeholders for students now imported into the main list
+    await c.env.DB.prepare(`
+        DELETE FROM students 
+        WHERE listType = 'unknown' 
+        AND (
+            uid IN (SELECT uid FROM students WHERE listType = ?)
+            OR (badge != '' AND badge IN (SELECT badge FROM students WHERE listType = ? AND badge != ''))
+        )
     `).bind(type, type).run();
 
     // 7. Delete the temp holding list
@@ -613,17 +623,33 @@ app.post('/api/admin/student/photo', authorizeAdmin, async (c) => {
     const { uid, photo, name, className, badge } = await c.req.json();
     if (!uid || !photo) return c.json({ error: "Missing data" }, 400);
     
-    // 1. Try to update existing records
-    const updateRes = await c.env.DB.prepare("UPDATE students SET photo = ? WHERE uid = ?").bind(photo, uid).run();
+    // 1. Try to update existing records by UID or Badge
+    const updateRes = await c.env.DB.prepare("UPDATE students SET photo = ? WHERE uid = ? OR (badge = ? AND badge != '')")
+        .bind(photo, uid, badge || '')
+        .run();
 
     // Update temporary riders as well
-    await c.env.DB.prepare("UPDATE temporary_riders SET photo = ? WHERE uid = ?").bind(photo, uid).run();
+    await c.env.DB.prepare("UPDATE temporary_riders SET photo = ? WHERE uid = ? OR (badge = ? AND badge != '')")
+        .bind(photo, uid, badge || '')
+        .run();
 
     // 2. If no rows updated, create a placeholder in the "未知" category
     if (updateRes.meta.changes === 0) {
         await c.env.DB.prepare("INSERT OR REPLACE INTO students (uid, listType, name, badge, class, photo) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(uid, 'unknown', name ?? uid, badge ?? "", className ?? '未知', photo)
             .run();
+    } else {
+        // Clean up unknown placeholders only if they now have a record in a proper list
+        await c.env.DB.prepare(`
+            DELETE FROM students 
+            WHERE listType = 'unknown' 
+            AND (uid = ? OR (badge = ? AND badge != ''))
+            AND EXISTS (
+                SELECT 1 FROM students s2 
+                WHERE s2.listType != 'unknown' 
+                AND (s2.uid = students.uid OR (s2.badge = students.badge AND s2.badge != ''))
+            )
+        `).bind(uid, badge || '').run();
     }
     
     return c.json({ success: true });

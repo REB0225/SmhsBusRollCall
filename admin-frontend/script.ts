@@ -829,15 +829,29 @@ async function deleteFolderPhotos(className: string): Promise<void> {
 }
 
 async function uploadStudentPhoto(): Promise<void> {
-    const uid = (document.getElementById('photo-upload-uid') as HTMLInputElement).value.trim();
+    const uidInput = (document.getElementById('photo-upload-uid') as HTMLInputElement).value.trim();
     const fileInput = document.getElementById('photo-upload-file') as HTMLInputElement;
     const file = fileInput.files?.[0];
-    if (!uid || !file) return alert('請輸入 UID 並選擇檔案');
+    if (!uidInput || !file) return alert('請輸入 UID 並選擇檔案');
+
+    let student = allStudentsList.find(s => 
+        (s.uid && s.uid.trim() === uidInput) || 
+        (s.badge && s.badge.trim() === uidInput)
+    );
+
     const photo = await compressPhoto(file);
+    const payload: any = {
+        uid: student ? student.uid : uidInput,
+        photo: photo,
+        badge: student ? student.badge : uidInput,
+        name: student ? student.name : uidInput,
+        className: student ? (student.class || '未知') : '未知'
+    };
+
     const res = await fetch(`${BASE_URL}/api/admin/student/photo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ uid, photo })
+        body: JSON.stringify(payload)
     });
     if (res.ok) { alert('上傳成功'); fetchPhotos(); }
 }
@@ -879,21 +893,22 @@ async function uploadBulkPhotos(): Promise<void> {
     for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const filenameWithoutExt = f.name.split('.')[0];
+        const filenameClean = filenameWithoutExt.trim();
         
         // 1. Try to match by badge or UID
-        let student = allStudentsList.find(s => s.badge === filenameWithoutExt || s.uid === filenameWithoutExt);
+        let student = allStudentsList.find(s => 
+            (s.badge && s.badge.trim() === filenameClean) || 
+            (s.uid && s.uid.trim() === filenameClean)
+        );
         
         const base64 = await compressPhoto(f);
         const payload: any = { 
-            uid: student ? student.uid : filenameWithoutExt, 
-            photo: base64 
+            uid: student ? student.uid : filenameClean, 
+            photo: base64,
+            badge: student ? student.badge : filenameClean,
+            name: student ? student.name : filenameClean,
+            className: student ? (student.class || '未知') : '未知'
         };
-        
-        if (!student) {
-            payload.name = filenameWithoutExt;
-            payload.badge = filenameWithoutExt;
-            payload.className = '未知';
-        }
 
         const res = await fetch(`${BASE_URL}/api/admin/student/photo`, {
             method: 'POST',
