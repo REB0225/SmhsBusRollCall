@@ -211,12 +211,12 @@ document.addEventListener('click', (e) => {
     if (isNaN(index)) return;
     const type = btn.dataset.type;
     if (type === 'account') {
-        if (confirm(`確認刪除此筆資料？`)){
+        if (confirm(`確認刪除這隻帳號？`)){
             accounts.splice(index, 1);
             renderAccounts();
         }
     } else {
-        if (confirm(`確認刪除此筆資料？`)){
+        if (confirm(`確認刪除這個時段？`)){
             slotConfigs.splice(index, 1);
             renderSlots();
         }
