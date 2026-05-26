@@ -211,11 +211,15 @@ document.addEventListener('click', (e) => {
     if (isNaN(index)) return;
     const type = btn.dataset.type;
     if (type === 'account') {
-        accounts.splice(index, 1);
-        renderAccounts();
+        if (confirm(`確認刪除此筆資料？`)){
+            accounts.splice(index, 1);
+            renderAccounts();
+        }
     } else {
-        slotConfigs.splice(index, 1);
-        renderSlots();
+        if (confirm(`確認刪除此筆資料？`)){
+            slotConfigs.splice(index, 1);
+            renderSlots();
+        }
     }
 });
 
