@@ -187,6 +187,7 @@ class App {
     if (savedToken) {
         this.authToken = savedToken;
         this.startMainView();
+        this.preseLogoutButton = false
     }
   }
 
@@ -206,6 +207,7 @@ class App {
         this.authToken = data.token;
         localStorage.setItem('userToken', data.token);
         this.startMainView();
+        this.preseLogoutButton = false
       } else {
         errorEl.textContent = data.error || '登入失敗';
       }
@@ -704,12 +706,14 @@ class App {
     logoutButton.style.fontWeight = 'bold';
 
     logoutButton.addEventListener('click', async () => {
+      if (confirm(`確認登出並清除資料？`)){
         // Clear pending roll calls and then logout
         this.pendingRollCalls = []; // Clear the array
         this.savePendingRecords(); // Save the cleared state
         await this.updatePendingUI(); // Update UI to reflect no pending items
         this.logout(); // Perform the logout
         this.reviewSheet.style.display = 'none'; // Close the review modal
+      }
     });
 
     logoutConfirmationContainer.appendChild(logoutMessage);
