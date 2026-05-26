@@ -9,7 +9,13 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-app.use('*', cors());
+app.use('*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: [],
+  maxAge: 86400,
+}));
 
 const authorize = async (c: any, next: any) => {
   const authHeader = c.req.header('Authorization');
