@@ -4,7 +4,7 @@ const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb";
 const BATTERY_LEVEL_UUID = "00002a19-0000-1000-8000-00805f9b34fb";
-const BASE_URL = 'https://bus-rollcall-backend.s211009.workers.dev';
+const BASE_URL = 'https://bus-rollcall-backend.scotat.workers.dev';
 
 interface Student {
   uid: string;
