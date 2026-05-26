@@ -427,19 +427,19 @@ app.get('/api/admin/rollcall-csv', authorizeAdmin, async (c) => {
     });
 
     // Add extra records
-    records.forEach(r => {
-        if (!students.some((s: any) => s.uid === r.uid)) {
-            const time = new Date(r.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-            const tempRider = await c.env.DB.prepare(
-              "SELECT name, badge, class, bus FROM temporary_riders WHERE uid = ? AND date = ? AND timeSlot = ? LIMIT 1"
-            ).bind(r.uid, date, timeSlot).first<any>();
-            if (tempRider) {
-              csv += `${r.uid},${tempRider.name},${tempRider.badge || ''},${tempRider.class || ''},"${tempRider.bus || ''}",已簽到(臨時),${time},${r?.uploaderName || ''}\n`;
-            } else {
-              csv += `${r.uid},未知,,,,已簽到,${time},${r?.uploaderName || ''}\n`;
-            }
+    for (const r of records) {
+      if (!students.some((s: any) => s.uid === r.uid)) {
+        const time = new Date(r.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        const tempRider = await c.env.DB.prepare(
+          "SELECT name, badge, class, bus FROM temporary_riders WHERE uid = ? AND date = ? AND timeSlot = ? LIMIT 1"
+        ).bind(r.uid, date, timeSlot).first<any>();
+        if (tempRider) {
+          csv += `${r.uid},${tempRider.name},${tempRider.badge || ''},${tempRider.class || ''},"${tempRider.bus || ''}",已簽到(臨時),${time},${r?.uploaderName || ''}\n`;
+        } else {
+          csv += `${r.uid},未知,,,,已簽到,${time},${r?.uploaderName || ''}\n`;
         }
-    });
+      }
+    }
 
     return new Response(csv, {
         headers: {
