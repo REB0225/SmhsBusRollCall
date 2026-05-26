@@ -5,7 +5,7 @@ compatibility_date = "2024-04-03"
 [[d1_databases]]
 binding = "DB"
 database_name = "bus-rollcall-db"
-database_id = "c05d960e-2a56-47b5-89d4-b0e24ef7db94"
+database_id = "07f18294-9815-41fb-adc9-9186ee4ee1f6"
 
 # Secrets like JWT_SECRET should be set via the Cloudflare Dashboard
 # or using 'wrangler secret put JWT_SECRET'
