@@ -79,6 +79,10 @@ class App {
       const res = await fetch(`${BASE_URL}/api/current-slot`, {
         headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
+      if (res.status === 401) {
+        this.logout();
+        return { slot: 'unknown', csvType: 'arrival' };
+      }
       const data = await res.json();
       this.currentSlotCache = { slot: data.slot, csvType: data.csvType, fetchedAt: now };
       return { slot: data.slot, csvType: data.csvType };
@@ -111,6 +115,10 @@ class App {
       const res = await fetch(`${BASE_URL}/api/admin/config/slots`, {
           headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
+      if (res.status === 401) {
+          this.logout();
+          throw new Error("Unauthorized");
+      }
       return await res.json();
   }
 
@@ -331,6 +339,10 @@ class App {
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
+      if (res.status === 401) {
+        this.logout();
+        return;
+      }
       const buses = await res.json();
       this.busSelect.innerHTML = '<option value="">請選擇車次</option>';
       this.reviewBusSelect.innerHTML = '<option value="">請選擇車次</option>';
@@ -366,6 +378,10 @@ class App {
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
+      if (res.status === 401) {
+        this.logout();
+        return;
+      }
       this.allStudents = await res.json();
     } catch (err) { console.error("Students fetch error", err); }
   }
@@ -485,6 +501,10 @@ class App {
       const res = await fetch(`${BASE_URL}/api/photo/${uid}`, {
         headers: { 'Authorization': `Bearer ${this.authToken}` }
       });
+      if (res.status === 401) {
+        this.logout();
+        return;
+      }
       const photoEl = document.getElementById('student-photo') as HTMLImageElement;
       if (res.ok) {
         const blob = await res.blob();
@@ -633,17 +653,35 @@ class App {
     const currentBus = this.reviewBusSelect.value;
 
     const cancelBtn = document.getElementById('close-review')!;
+    cancelBtn.style.display = 'block'; // Always show close button to avoid soft-lock!
+
     if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
-        cancelBtn.style.display = 'none';
         const warning = document.createElement('div');
         warning.className = 'error-text';
         warning.style.textAlign = 'center';
         warning.style.marginBottom = '15px';
-        warning.style.padding = '10px';
+        warning.style.padding = '15px';
         warning.style.background = 'var(--warning-bg)';
         warning.style.borderRadius = '10px';
-        warning.textContent = "⚠️ 偵測到不同時段的舊資料。請在繼續之前上傳或刪除這些記錄。";
+        warning.style.border = '1px solid var(--error)';
+        warning.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 8px;">⚠️ 偵測到不同時段的舊資料</div>
+            <div style="font-size: 13px; margin-bottom: 10px; color: var(--text);">這些紀錄來自先前的點名時段，繼續點名可能會導致資料錯亂。</div>
+            <button id="quick-clear-old-btn" class="primary-btn" style="background-color: var(--error); padding: 8px 16px; font-size: 13px; border-radius: 8px; width: auto; display: inline-block;">清除舊資料，開始今日點名</button>
+        `;
         this.reviewList.appendChild(warning);
+        
+        setTimeout(() => {
+          document.getElementById('quick-clear-old-btn')?.addEventListener('click', async () => {
+            if (confirm("確認清除所有先前的舊點名資料？")) {
+              this.pendingRollCalls = [];
+              this.savePendingRecords();
+              await this.updatePendingUI();
+              this.closeReview();
+              alert("已清除舊資料，現在可以正常開始今日點名！");
+            }
+          });
+        }, 0);
     } else {
         cancelBtn.style.display = 'block';
     }
@@ -750,10 +788,6 @@ class App {
   }
 
   private closeReview() {
-    if (this.isMismatchedData && this.pendingRollCalls.length > 0) {
-        alert("請先處理舊時段的資料。");
-        return;
-    }
     this.reviewSheet.style.display = 'none';
     this.preseLogoutButton = false;
   }
@@ -797,6 +831,10 @@ class App {
             },
             body: JSON.stringify({ records })
         });
+        if (res.status === 401) {
+            this.logout();
+            return;
+        }
 
         if (res.ok) {
             this.pendingRollCalls = this.pendingRollCalls.filter(r => !recordsToSync.includes(r));
